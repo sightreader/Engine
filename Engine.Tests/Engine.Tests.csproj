@@ -21,4 +21,14 @@
     <ProjectReference Include="..\Engine\Engine.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Assets\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\Etude_No._1.musicxml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

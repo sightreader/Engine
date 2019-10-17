@@ -110,7 +110,7 @@ namespace SightReader.Engine.ScoreBuilder
             return builtScore;
         }
 
-        public ScoreInfo BuildScoreInfo(scorepartwise rawScore) => new ScoreInfo()
+        private ScoreInfo BuildScoreInfo(scorepartwise rawScore) => new ScoreInfo()
         {
             WorkTitle = rawScore.work.worktitle,
             WorkNumber = rawScore.work.worknumber,
@@ -128,7 +128,7 @@ namespace SightReader.Engine.ScoreBuilder
             EncodingDates = rawScore.identification.encoding.Items.Length > 0 ? rawScore.identification.encoding.Items.Where((x, i) => rawScore.identification.encoding.ItemsElementName[i] == ItemsChoiceType.encodingdate).OfType<DateTime>().ToArray() : new DateTime[] { },
         };
 
-        public Staff[] BuildPartStaves(scorepartwise rawScore, scorepartwisePartMeasure[] measures)
+        private Staff[] BuildPartStaves(scorepartwise rawScore, scorepartwisePartMeasure[] measures)
         {
             var staves = new List<Staff>(4)
             {
@@ -148,7 +148,7 @@ namespace SightReader.Engine.ScoreBuilder
             return staves.ToArray();
         }
 
-        public void BuildPartStaffMeasure(scorepartwisePartMeasure measure, List<Staff> staves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
+        private void BuildPartStaffMeasure(scorepartwisePartMeasure measure, List<Staff> staves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
         {
             var measureNumber = measure.number.ToInt();
             var staffBuilders = new StaffBuilder[] {
@@ -203,7 +203,7 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public void BuildPartStaffMeasureAttributes(attributes attributes, List<BeatDurationDirective> beatDurationDirectives, int measureNumber)
+        private void BuildPartStaffMeasureAttributes(attributes attributes, List<BeatDurationDirective> beatDurationDirectives, int measureNumber)
         {
             if (attributes.divisionsSpecified)
             {
@@ -224,7 +224,7 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public void BuildPartStaffMeasureBarline(barline barline, List<RepeatDirective> repeatDirectives, int measureNumber)
+        private void BuildPartStaffMeasureBarline(barline barline, List<RepeatDirective> repeatDirectives, int measureNumber)
         {
             switch (barline.repeat.direction)
             {
@@ -244,7 +244,7 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public Note BuildPartStaffMeasureElement(note rawNote, List<Staff> staves, int measureNumber)
+        private Note BuildPartStaffMeasureElement(note rawNote, List<Staff> staves, int measureNumber)
         {
             var note = new Note();
             var notations = new List<INotation>();
@@ -277,7 +277,7 @@ namespace SightReader.Engine.ScoreBuilder
             return note;
         }
 
-        public void BuildPartStaffMeasureElementNotations(notations[] rawNotations, List<INotation> notations)
+        private void BuildPartStaffMeasureElementNotations(notations[] rawNotations, List<INotation> notations)
         {
             foreach (var rawNotation in rawNotations)
             {
@@ -350,7 +350,7 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public void BuildPartStaffMeasureElementArticulations(articulations rawArticulations, List<INotation> notations)
+        private void BuildPartStaffMeasureElementArticulations(articulations rawArticulations, List<INotation> notations)
         {
             for (int i = 0; i < rawArticulations.Items.Length; i++)
             {
@@ -404,7 +404,7 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public void BuildPartStaffMeasureElementOrnaments(ornaments ornaments, List<INotation> notations)
+        private void BuildPartStaffMeasureElementOrnaments(ornaments ornaments, List<INotation> notations)
         {
             for (int i = 0; i < ornaments.Items.Length; i++)
             {
