@@ -49,7 +49,7 @@ namespace SightReader.Engine.ScoreBuilder
             };
 
             /* alter is a decimal, but microtonal alters aren't supported in a piano */
-            byte alterSemitone = p.alterSpecified ? (byte)Math.Floor(p.alter) : (byte)0;
+            decimal alterSemitone = (p.alterSpecified || p.alter != 0) ? Math.Floor(p.alter) : 0;
 
             return (byte)(valueForOctave + stepSemitone + alterSemitone);
         }
