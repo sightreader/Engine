@@ -128,12 +128,6 @@ namespace SightReader.Engine.Interpreter
         public bool IsUnstresed { get; set; }
     }
 
-    public class Ornament : INotation
-    {
-        public bool IsDelayedInvertedTurn { get; set; }
-        public bool IsDelayedTurn { get; set; }
-    }
-
     public interface IOrnament
     {
 

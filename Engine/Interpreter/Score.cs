@@ -32,8 +32,8 @@ namespace SightReader.Engine.Interpreter
         public ScoreCreator[] Creators { get; set; } = new ScoreCreator[] { };
         public ScoreRights[] Rights { get; set; } = new ScoreRights[] { };
         public ScoreMisc[] Misc { get; set; } = new ScoreMisc[] { };
-        public string EncodingSoftware { get; set; } = "";
-        public DateTime EncodingDate { get; set; } = DateTime.MinValue;
+        public string[] EncodingSoftware { get; set; } = new string[] { };
+        public DateTime[] EncodingDates { get; set; } = new DateTime[] { };
         public string Source { get; set; } = "";
         public string[] Credits { get; set; } = new string[] { };
     }
@@ -49,6 +49,7 @@ namespace SightReader.Engine.Interpreter
     public class Staff
     {
         public IElement[] Elements { get; set; } = new IElement[] { };
+        public IDirective[] Directives { get; set; } = new IDirective[] { };
         public int Number { get; set; } = 1;
     }
 
@@ -66,7 +67,7 @@ namespace SightReader.Engine.Interpreter
          * 
          * Note: This can be changed mid-measure.
          */
-        public int Divisions { get; set; }
+        public decimal Divisions { get; set; }
 
         /**
          * Defines the element range in the staff in which this directive first applies.
@@ -86,6 +87,7 @@ namespace SightReader.Engine.Interpreter
     public class Score
     {
         public ScoreInfo Info { get; set; } = new ScoreInfo();
+        public Part[] Parts { get; set; } = new Part[] { };
 
         public static Score CreateFromMusicXml(Stream stream)
         {
