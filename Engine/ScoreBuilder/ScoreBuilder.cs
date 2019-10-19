@@ -110,52 +110,103 @@ namespace SightReader.Engine.ScoreBuilder
             return builtScore;
         }
 
-        public ScoreInfo BuildScoreInfo(scorepartwise rawScore) => new ScoreInfo()
+        private ScoreInfo BuildScoreInfo(scorepartwise score)
         {
-            WorkTitle = rawScore.work.worktitle,
-            WorkNumber = rawScore.work.worknumber,
-            MovementNumber = rawScore.movementnumber,
-            MovementTitle = rawScore.movementtitle,
-            Creators = rawScore.identification.creator.Length > 0 ?
-                       rawScore.identification.creator.Select(x => new ScoreCreator() { Type = x.type, Name = x.Value }).ToArray() : new ScoreCreator[] { },
-            Rights = rawScore.identification.rights.Length > 0 ?
-                       rawScore.identification.rights.Select(x => new ScoreRights() { Type = x.type, Content = x.Value }).ToArray() : new ScoreRights[] { },
-            Misc = rawScore.identification.miscellaneous.Length > 0 ?
-                       rawScore.identification.miscellaneous.Select(x => new ScoreMisc() { Key = x.name, Value = x.Value }).ToArray() : new ScoreMisc[] { },
-            Source = rawScore.identification.source ?? "",
-            Credits = rawScore.credit.Length > 0 ? rawScore.credit.SelectMany(credit => credit.Items.OfType<formattedtextid>().Select(creditWords => creditWords.Value)).ToArray() : new string[] { },
-            EncodingSoftware = rawScore.identification.encoding.Items.Length > 0 ? rawScore.identification.encoding.Items.Where((x, i) => rawScore.identification.encoding.ItemsElementName[i] == ItemsChoiceType.software).Select(x => x.ToString()).ToArray() : new string[] { },
-            EncodingDates = rawScore.identification.encoding.Items.Length > 0 ? rawScore.identification.encoding.Items.Where((x, i) => rawScore.identification.encoding.ItemsElementName[i] == ItemsChoiceType.encodingdate).OfType<DateTime>().ToArray() : new DateTime[] { },
-        };
+            var info = new ScoreInfo();
 
-        public Staff[] BuildPartStaves(scorepartwise rawScore, scorepartwisePartMeasure[] measures)
-        {
-            var staves = new List<Staff>(4)
+            if (score.work != null)
             {
-                new Staff(),
-                new Staff(),
-                new Staff(),
-                new Staff()
+                if (score.work.worktitle != null)
+                {
+                    info.WorkTitle = score.work.worktitle;
+                }
+                if (score.work.worknumber != null)
+                {
+                    info.WorkNumber = score.work.worknumber;
+                }
+            }
+
+            if (score.movementnumber != null)
+            {
+                info.MovementNumber = score.movementnumber;
+            }
+            if (score.movementtitle != null)
+            {
+                info.MovementTitle = score.movementtitle;
+            }
+
+            if (score.identification != null)
+            {
+                if (score.identification.creator?.Length > 0)
+                {
+                    info.Creators = score.identification.creator.Select(x => new ScoreCreator() { Type = x.type ?? "", Name = x.Value ?? "" }).ToArray();
+                }
+                if (score.identification.rights?.Length > 0)
+                {
+                    info.Rights = score.identification.rights.Select(x => new ScoreRights() { Type = x.type ?? "", Content = x.Value ?? "" }).ToArray();
+                }
+                if (score.identification.miscellaneous?.Length > 0)
+                {
+                    info.Misc = score.identification.miscellaneous.Select(x => new ScoreMisc() { Key = x.name ?? "", Value = x.Value ?? "" }).ToArray();
+                }
+                if (score.identification.source != null)
+                {
+                    info.Source = score.identification.source;
+                }
+                if (score.identification.encoding?.Items.Length > 0)
+                {
+                    var encodingSoftware = score.identification.encoding.Items.Where((x, i) => score.identification.encoding.ItemsElementName[i] == ItemsChoiceType.software).Select(x => x.ToString()).ToArray();
+                    var encodingDates = score.identification.encoding.Items.Where((x, i) => score.identification.encoding.ItemsElementName[i] == ItemsChoiceType.encodingdate).OfType<DateTime>().ToArray();
+
+                    if (encodingSoftware.Length > 0)
+                    {
+                        info.EncodingSoftware = encodingSoftware;
+                    }
+                    if (encodingDates.Length > 0)
+                    {
+                        info.EncodingDates = encodingDates;
+                    }
+                }
+            }
+
+            if (score.credit?.Length > 0)
+            {
+                info.Credits = score.credit.SelectMany(credit => credit.Items.OfType<formattedtextid>().Select(creditWords => creditWords.Value ?? "")).ToArray();
+            }
+
+            return info;
+        }
+
+        private Staff[] BuildPartStaves(scorepartwise rawScore, scorepartwisePartMeasure[] measures)
+        {
+            var elementStaves = new List<List<List<IElement>>>(2)
+            {
+                new List<List<IElement>>(),
+                new List<List<IElement>>()
             };
             var beatDurationDirectives = new List<BeatDurationDirective>();
             var repeatDirectives = new List<RepeatDirective>();
 
             foreach (var measure in measures)
             {
-                BuildPartStaffMeasure(measure, staves, beatDurationDirectives, repeatDirectives);
+                BuildPartStaffMeasure(measure, elementStaves, beatDurationDirectives, repeatDirectives);
             }
 
-            return staves.ToArray();
+            return elementStaves.Select((x, i) => new Staff()
+            {
+                Number = i + 1,
+                Directives = new List<IDirective>().Concat(beatDurationDirectives)
+                .Concat(repeatDirectives).ToArray(),
+                Elements = x.Select(y => y.ToArray()).ToArray()
+            }).Where(x => x.Elements.Length > 0).ToArray();
         }
 
-        public void BuildPartStaffMeasure(scorepartwisePartMeasure measure, List<Staff> staves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
+        private void BuildPartStaffMeasure(scorepartwisePartMeasure measure,  List<List<List<IElement>>> elementStaves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
         {
             var measureNumber = measure.number.ToInt();
             var staffBuilders = new StaffBuilder[] {
                 new StaffBuilder(1),
-                new StaffBuilder(2),
-                new StaffBuilder(3),
-                new StaffBuilder(4),
+                new StaffBuilder(2)
             };
 
             foreach (var item in measure.Items)
@@ -169,10 +220,18 @@ namespace SightReader.Engine.ScoreBuilder
                         BuildPartStaffMeasureBarline(barline, repeatDirectives, measureNumber);
                         break;
                     case note rawNote:
-                        Note note = BuildPartStaffMeasureElement(rawNote, staves, measureNumber);
+                        Element el = BuildPartStaffMeasureElement(rawNote, measureNumber);
+                        /* If there are more than 2 staves, dynamically extend the array */
+                        if (el.Staff > staffBuilders.Length)
+                        {
+                            var staffBuildersExtended = new List<StaffBuilder>(staffBuilders);
+                            staffBuildersExtended.Add(new StaffBuilder(staffBuilders.Length));
+                            staffBuilders = staffBuildersExtended.ToArray();
+                        }
+
                         for (int i = 0; i < staffBuilders.Length; i++)
                         {
-                            staffBuilders[i].AddNote(note);
+                            staffBuilders[i].ProcessNote(el);
                         }
                         break;
                     case backup backup:
@@ -182,28 +241,36 @@ namespace SightReader.Engine.ScoreBuilder
                         }
                         break;
                     case forward forward:
-                        if (forward.voice.Length > 0)
+                        if (forward.voice?.Length > 0)
                         {
                             throw new NotSupportedException($"Measure {measureNumber} has a <forward> element with voice {forward.voice}. Forwarding specific voices is not currently supported.");
                         }
 
-                        if (forward.staff.Length > 0)
+                        if (forward.staff?.Length > 0)
                         {
                             var staffForClock = forward.staff.ToByte() - 1;
                             staffBuilders[staffForClock].AdvanceClock(forward.duration);
-                        } else
+                        }
+                        else
                         {
                             for (int i = 0; i < staffBuilders.Length; i++)
                             {
                                 staffBuilders[i].RewindClock(forward.duration);
                             }
                         }
-                        break; 
+                        break;
                 }
+            }
+
+            for (int i = 0; i < staffBuilders.Length; i++)
+            {
+                var staffBuilder = staffBuilders[i];
+                var elementStaff = elementStaves[i];
+                elementStaff.AddRange(staffBuilder.GetElements());
             }
         }
 
-        public void BuildPartStaffMeasureAttributes(attributes attributes, List<BeatDurationDirective> beatDurationDirectives, int measureNumber)
+        private void BuildPartStaffMeasureAttributes(attributes attributes, List<BeatDurationDirective> beatDurationDirectives, int measureNumber)
         {
             if (attributes.divisionsSpecified)
             {
@@ -224,9 +291,9 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public void BuildPartStaffMeasureBarline(barline barline, List<RepeatDirective> repeatDirectives, int measureNumber)
+        private void BuildPartStaffMeasureBarline(barline barline, List<RepeatDirective> repeatDirectives, int measureNumber)
         {
-            switch (barline.repeat.direction)
+            switch (barline.repeat?.direction)
             {
                 case backwardforward.backward:
                     repeatDirectives.Add(new RepeatDirective()
@@ -244,12 +311,27 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public Note BuildPartStaffMeasureElement(note rawNote, List<Staff> staves, int measureNumber)
+        private Element BuildPartStaffMeasureElement(note rawNote, int measureNumber)
         {
-            var note = new Note();
+            var el = new Element();
             var notations = new List<INotation>();
 
-            BuildPartStaffMeasureElementNotations(rawNote.notations, notations);
+            el.Measure = (ushort)measureNumber;
+            
+            if (rawNote.staff != null)
+            {
+                el.Staff = rawNote.staff.ToByte();
+            }
+            if (rawNote.voice != null)
+            {
+                el.Voice = rawNote.voice.ToByte();
+            }
+
+            if (rawNote.notations != null)
+            {
+                BuildPartStaffMeasureElementNotations(rawNote.notations, notations);
+                el.Notations = notations.ToArray();
+            }
 
             for (int i = 0; i < rawNote.Items.Length; i++)
             {
@@ -259,25 +341,28 @@ namespace SightReader.Engine.ScoreBuilder
                 {
                     case ItemsChoiceType1.duration:
                         var duration = (decimal)rawNote.Items[i];
-                        note.Duration = duration;
+                        el.Duration = duration;
                         break;
                     case ItemsChoiceType1.grace:
-                        note.Type = NoteType.Grace;
+                        el.IsGraceNote = true;
+                        break;
+                    case ItemsChoiceType1.rest:
+                        el.IsRest = true;
                         break;
                     case ItemsChoiceType1.chord:
-                        note.IsChordNote = true;
+                        el.IsChordChild = true;
                         break;
                     case ItemsChoiceType1.pitch:
                         var pitch = rawNote.Items[i] as pitch;
-                        note.Pitch = pitch!.ToByte();
+                        el.Pitch = pitch!.ToByte();
                         break;
                 }
             }
 
-            return note;
+            return el;
         }
 
-        public void BuildPartStaffMeasureElementNotations(notations[] rawNotations, List<INotation> notations)
+        private void BuildPartStaffMeasureElementNotations(notations[] rawNotations, List<INotation> notations)
         {
             foreach (var rawNotation in rawNotations)
             {
@@ -289,7 +374,7 @@ namespace SightReader.Engine.ScoreBuilder
                             notations.Add(new Arpeggiate()
                             {
                                 IsDownwards = arpeggiate.direction == updown.down,
-                                Number = arpeggiate.number.ToByte()
+                                Number = arpeggiate.number != null ? arpeggiate.number.ToByte() : (byte)1
                             });
                             break;
                         case articulations articulations:
@@ -299,14 +384,14 @@ namespace SightReader.Engine.ScoreBuilder
                             notations.Add(new Glissando()
                             {
                                 IsStarting = glissando.type == startstop.start,
-                                Number = glissando.number.ToByte()
+                                Number = glissando.number != null ? glissando.number.ToByte() : (byte)1
                             });
                             break;
                         case nonarpeggiate nonArpeggiate:
                             notations.Add(new NonArpeggiate()
                             {
                                 IsTop = nonArpeggiate.type == topbottom.top,
-                                Number = nonArpeggiate.number.ToByte()
+                                Number = nonArpeggiate.number != null ? nonArpeggiate.number.ToByte() : (byte)1
                             });
                             break;
                         case ornaments ornaments:
@@ -316,7 +401,7 @@ namespace SightReader.Engine.ScoreBuilder
                             notations.Add(new Slide()
                             {
                                 IsStarting = slide.type == startstop.start,
-                                Number = slide.number.ToByte()
+                                Number = slide.number != null ? slide.number.ToByte() : (byte)1
                             });
                             break;
                         case slur slur:
@@ -329,7 +414,7 @@ namespace SightReader.Engine.ScoreBuilder
                                     startstopcontinue.stop => StartStopContinue.Stop,
                                     _ => StartStopContinue.Stop
                                 },
-                                Number = slur.number.ToByte(),
+                                Number = slur.number != null ? slur.number.ToByte() : (byte)1
                             });
                             break;
                         case tied tied:
@@ -342,7 +427,7 @@ namespace SightReader.Engine.ScoreBuilder
                                     tiedtype.stop => StartStopContinue.Stop,
                                     _ => StartStopContinue.Stop
                                 },
-                                Number = tied.number.ToByte(),
+                                Number = tied.number != null ? tied.number.ToByte() : (byte)1,
                             });
                             break;
                     }
@@ -350,7 +435,7 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public void BuildPartStaffMeasureElementArticulations(articulations rawArticulations, List<INotation> notations)
+        private void BuildPartStaffMeasureElementArticulations(articulations rawArticulations, List<INotation> notations)
         {
             for (int i = 0; i < rawArticulations.Items.Length; i++)
             {
@@ -404,7 +489,7 @@ namespace SightReader.Engine.ScoreBuilder
             }
         }
 
-        public void BuildPartStaffMeasureElementOrnaments(ornaments ornaments, List<INotation> notations)
+        private void BuildPartStaffMeasureElementOrnaments(ornaments ornaments, List<INotation> notations)
         {
             for (int i = 0; i < ornaments.Items.Length; i++)
             {
@@ -414,14 +499,15 @@ namespace SightReader.Engine.ScoreBuilder
                 {
                     case ItemsChoiceType2.delayedinvertedturn:
                         var delayedInvertedTurn = ornaments.Items[i] as horizontalturn;
-                        notations.Add(new Turn() { 
+                        notations.Add(new Turn()
+                        {
                             IsDelayed = true,
                             IsInverted = true,
                             StartNote = delayedInvertedTurn!.startnoteSpecified ? delayedInvertedTurn.startnote switch
                             {
                                 startnote.below => StartNote.Below,
-                                startnote.main=> StartNote.Main,
-                                startnote.upper=> StartNote.Upper,
+                                startnote.main => StartNote.Main,
+                                startnote.upper => StartNote.Upper,
                                 _ => StartNote.Below
                             } : StartNote.Below
                         });
@@ -494,26 +580,28 @@ namespace SightReader.Engine.ScoreBuilder
                         break;
                     case ItemsChoiceType2.tremolo:
                         var tremolo = ornaments.Items[i] as tremolo;
-                        notations.Add(new Tremolo() { Type = tremolo!.type switch
+                        notations.Add(new Tremolo()
                         {
-                            tremolotype.start => TremoloType.Start,
-                            tremolotype.stop => TremoloType.Stop,
-                            tremolotype.single=> TremoloType.Single,
-                            _ => TremoloType.Single,
-                        }
+                            Type = tremolo!.type switch
+                            {
+                                tremolotype.start => TremoloType.Start,
+                                tremolotype.stop => TremoloType.Stop,
+                                tremolotype.single => TremoloType.Single,
+                                _ => TremoloType.Single,
+                            }
                         });
                         break;
                     case ItemsChoiceType2.wavyline:
                         var wavyline = ornaments.Items[i] as wavyline;
                         notations.Add(new WavyLine()
                         {
-                            Number = wavyline!.number.ToByte(),
+                            Number = wavyline!.number != null ? wavyline.number.ToByte() : (byte)1,
                             StartNote = wavyline.startnoteSpecified ?
-                            wavyline.startnote switch 
+                            wavyline.startnote switch
                             {
                                 startnote.below => StartNote.Below,
                                 startnote.main => StartNote.Main,
-                                startnote.upper=> StartNote.Upper,
+                                startnote.upper => StartNote.Upper,
                                 _ => StartNote.Main,
                             } : StartNote.Main,
                             TrillStep = wavyline.trillstepSpecified ?
