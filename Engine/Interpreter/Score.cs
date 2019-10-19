@@ -13,8 +13,8 @@ namespace SightReader.Engine.Interpreter
 
     public class ScoreRights
     {
-        public string Type { get; set;  } = "";
-        public string Content { get; set;  } = "";
+        public string Type { get; set; } = "";
+        public string Content { get; set; } = "";
     }
 
     public class ScoreMisc
@@ -41,16 +41,28 @@ namespace SightReader.Engine.Interpreter
     public class Part
     {
         public string Id { get; set; } = "";
-        public string Name { get; set;  } = "";
+        public string Name { get; set; } = "";
 
         public Staff[] Staves { get; set; } = new Staff[] { };
     }
 
     public class Staff
     {
-        public IElement[] Elements { get; set; } = new IElement[] { };
+        private int number;
+
+        public IElement[][] Elements { get; set; } = new IElement[][] { };
         public IDirective[] Directives { get; set; } = new IDirective[] { };
-        public int Number { get; set; } = 1;
+        public int Number
+        {
+            get
+            {
+                return number;
+            }
+            set
+            {
+                number = value == 0 ? 1 : value;
+            }
+        }
     }
 
     public interface IDirective { }

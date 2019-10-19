@@ -130,5 +130,111 @@ namespace SightReader.Engine.Tests
                 },
             });
         }
+
+        [Fact]
+        public void CanBuildFullFeaturedSingleStaffMusicXml()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open));
+            var score = builder.Build();
+
+            score.Parts.Should().ContainSingle();
+            score.Parts.First().Staves.Should().HaveCount(1);
+
+            var staff = score.Parts.First().Staves.First();
+
+            staff.Elements[0].Should().BeEquivalentTo(new Element()
+            {
+                Pitch = "C4".ToPitch(),
+                IsChordChild = false,
+                Measure = 1,
+                Staff = 1,
+                Voice = 1,
+                Duration = 384m
+            });
+
+            var noteWithTrill = staff.Elements.SelectMany(x => x.Where(y => y.Notations.OfType<Trill>().Count() > 0)
+            ).First();
+            noteWithTrill.Measure.Should().Be(13);
+            noteWithTrill.Pitch.Should().Be("G4".ToPitch());
+
+            var noteWithTurn = staff.Elements.SelectMany(x => x.Where(y => y.Notations.OfType<Turn>().Count() > 0)
+            ).First();
+            noteWithTurn.Measure.Should().Be(14);
+            noteWithTurn.Notations[0].As<Turn>().IsInverted = false;
+            noteWithTurn.Pitch.Should().Be("A4".ToPitch());
+
+            var noteWithInvertedTurn = staff.Elements.SelectMany(x => x.Where(y => y.Notations.OfType<Turn>().Count() > 0)
+            ).ElementAt(1);
+            noteWithInvertedTurn.Measure.Should().Be(15);
+            noteWithInvertedTurn.Notations[0].As<Turn>().IsInverted = true;
+            noteWithInvertedTurn.Pitch.Should().Be("B4".ToPitch());
+
+            var noteWithMordent = staff.Elements.SelectMany(x => x.Where(y => y.Notations.OfType<Mordent>().Count() > 0)
+            ).First();
+            noteWithMordent.Measure.Should().Be(16);
+            noteWithMordent.Notations[0].As<Mordent>().IsInverted = false;
+            noteWithMordent.Pitch.Should().Be("C5".ToPitch());
+
+            var noteWithInvertedMordent = staff.Elements.SelectMany(x => x.Where(y => y.Notations.OfType<Mordent>().Count() > 0)
+            ).ElementAt(1);
+            noteWithInvertedMordent.Measure.Should().Be(17);
+            noteWithInvertedMordent.Notations[0].As<Mordent>().IsInverted = true;
+            noteWithInvertedMordent.Pitch.Should().Be("C4".ToPitch());
+
+            var graceNote = staff.Elements.SelectMany(x => x.Where(y => y.IsGraceNote)).First();
+            graceNote.Measure.Should().Be(18);
+            graceNote.Pitch.Should().Be("D4".ToPitch());
+
+            var arpeggiatedGroups = staff.Elements.Where(x => x.Where(y => y.Notations.OfType<Arpeggiate>().Count() > 0).Count() > 0
+            ).ToArray();
+
+
+            var arpeggiatedDefault = arpeggiatedGroups[0].ToArray();
+            arpeggiatedGroups.Should().HaveCount(3);
+
+            arpeggiatedDefault[0].Measure.Should().Be(20);
+            arpeggiatedDefault[0].Pitch.Should().Be("C4".ToPitch());
+            arpeggiatedDefault[1].Pitch.Should().Be("E4".ToPitch());
+            arpeggiatedDefault[2].Pitch.Should().Be("G4".ToPitch());
+            arpeggiatedDefault[3].Pitch.Should().Be("C5".ToPitch());
+
+            var arpeggiatedUp = arpeggiatedGroups[1].ToArray();
+            arpeggiatedUp[0].Measure.Should().Be(21);
+            arpeggiatedUp[0].Pitch.Should().Be("D4".ToPitch());
+            arpeggiatedUp[1].Pitch.Should().Be("F4".ToPitch());
+            arpeggiatedUp[2].Pitch.Should().Be("A4".ToPitch());
+            arpeggiatedUp[3].Pitch.Should().Be("D5".ToPitch());
+
+            var arpeggiatedDown = arpeggiatedGroups[2].ToArray();
+            arpeggiatedDown[0].Measure.Should().Be(22);
+            arpeggiatedDown[0].Pitch.Should().Be("E4".ToPitch());
+            arpeggiatedDown[1].Pitch.Should().Be("G4".ToPitch());
+            arpeggiatedDown[2].Pitch.Should().Be("B4".ToPitch());
+            arpeggiatedDown[3].Pitch.Should().Be("E5".ToPitch());
+
+
+            var measureWithVoices = staff.Elements.Where(x => x.Where(y => y.Measure == 25).Count() > 0
+            ).ToArray();
+            measureWithVoices.Should().HaveCount(4);
+
+            measureWithVoices[0][0].Pitch.Should().Be("D4".ToPitch());
+            measureWithVoices[0][0].Voice.Should().Be(3);
+            measureWithVoices[0][1].Pitch.Should().Be("A4".ToPitch());
+            measureWithVoices[0][1].Voice.Should().Be(2);
+            measureWithVoices[0][2].Pitch.Should().Be("E5".ToPitch());
+            measureWithVoices[0][2].Voice.Should().Be(1);
+
+            measureWithVoices[1][0].Pitch.Should().Be("F4".ToPitch());
+            measureWithVoices[1][0].Voice.Should().Be(3);
+
+            measureWithVoices[2][0].Pitch.Should().Be("D4".ToPitch());
+            measureWithVoices[2][0].Voice.Should().Be(3);
+            measureWithVoices[2][1].Pitch.Should().Be("C5".ToPitch());
+            measureWithVoices[2][1].Voice.Should().Be(2);
+
+            measureWithVoices[3][0].Pitch.Should().Be("F4".ToPitch());
+            measureWithVoices[3][0].Voice.Should().Be(3);
+
+        }
     }
 }
