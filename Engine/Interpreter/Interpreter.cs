@@ -1,16 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace SightReader.Engine.Interpreter
 {
+    public class PlaybackContext {
+        public Score Score { get; set; } = new Score();
+        public int ElementIndex { get; set; }
+        public Action<IPianoEvent> Output { get; set; }
+    }
     public class Interpreter
     {
-        public event Action<IPianoEvent> Received = delegate { };
+        private PlaybackContext context;
+        private PlaybackProcessor processor;
 
-        public void Play(IPianoEvent e)
+        public event Action<IPianoEvent> Output = delegate { };
+
+        public Interpreter()
         {
-            throw new NotImplementedException();
+            context = new PlaybackContext()
+            {
+                Output = Output
+            };
+            processor = new PlaybackProcessor(context);
+        }
+
+        public void SetScore(Score score)
+        {
+            context.Score = score;
+        }
+
+        public void ResetPlayback()
+        {
+            context.ElementIndex = 0;
+        }
+
+        public void Input(IPianoEvent e)
+        {
+            processor.Process(e);
         }
     }
 }
