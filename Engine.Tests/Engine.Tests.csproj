@@ -34,6 +34,9 @@
     <None Update="Assets\Full_Identification.musicxml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Multi_Voice_Grand_Staff_Excerpt.musicxml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

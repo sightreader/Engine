@@ -317,7 +317,15 @@ namespace SightReader.Engine.ScoreBuilder
             var notations = new List<INotation>();
 
             el.Measure = (ushort)measureNumber;
-            el.Voice = rawNote.voice.ToByte();
+            
+            if (rawNote.staff != null)
+            {
+                el.Staff = rawNote.staff.ToByte();
+            }
+            if (rawNote.voice != null)
+            {
+                el.Voice = rawNote.voice.ToByte();
+            }
 
             if (rawNote.notations != null)
             {

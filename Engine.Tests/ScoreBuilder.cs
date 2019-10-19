@@ -236,5 +236,67 @@ namespace SightReader.Engine.Tests
             measureWithVoices[3][0].Voice.Should().Be(3);
 
         }
+
+        [Fact]
+        public void CanBuildMultiVoiceGrandStaffExcerptMusicXml()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Multi_Voice_Grand_Staff_Excerpt.musicxml", FileMode.Open));
+            var score = builder.Build();
+
+            score.Parts.Should().ContainSingle();
+            score.Parts.First().Staves.Should().HaveCount(2);
+
+            var treble = score.Parts.First().Staves.First().Elements;
+            var bass = score.Parts.First().Staves[1].Elements;
+
+            treble.Should().HaveCount(6);
+            treble[0][0].Pitch.Should().Be("C5".ToPitch());
+            treble[0][0].Voice.Should().Be(2);
+            treble[0][1].Pitch.Should().Be("F5".ToPitch());
+            treble[0][1].Voice.Should().Be(2);
+            treble[0][2].Pitch.Should().Be("Bb5".ToPitch());
+            treble[0][2].Voice.Should().Be(1);
+
+            treble[1][0].Pitch.Should().Be("Ab5".ToPitch());
+            treble[1][0].Voice.Should().Be(1);
+
+            treble[2][0].Pitch.Should().Be("Bb4".ToPitch());
+            treble[2][0].Voice.Should().Be(2);
+            treble[2][1].Pitch.Should().Be("F5".ToPitch());
+            treble[2][1].Voice.Should().Be(1);
+
+            treble[3][0].Pitch.Should().Be("Bb4".ToPitch());
+            treble[3][0].Voice.Should().Be(2);
+            treble[3][1].Pitch.Should().Be("Ab5".ToPitch());
+            treble[3][1].Voice.Should().Be(1);
+
+            treble[4][0].Pitch.Should().Be("G5".ToPitch());
+            treble[4][0].Voice.Should().Be(1);
+
+            treble[5][0].Pitch.Should().Be("Gb4".ToPitch());
+            treble[5][0].Voice.Should().Be(2);
+            treble[5][1].Pitch.Should().Be("C5".ToPitch());
+            treble[5][1].Voice.Should().Be(2);
+            treble[5][2].Pitch.Should().Be("Eb5".ToPitch());
+            treble[5][2].Voice.Should().Be(1);
+
+            bass.Should().HaveCount(8);
+            bass[0][0].Pitch.Should().Be("F3".ToPitch());
+            bass[0][0].Voice.Should().Be(5);
+            bass[1][0].Pitch.Should().Be("Eb3".ToPitch());
+            bass[1][0].Voice.Should().Be(5);
+            bass[2][0].Pitch.Should().Be("D3".ToPitch());
+            bass[2][0].Voice.Should().Be(5);
+            bass[3][0].Pitch.Should().Be("Bb2".ToPitch());
+            bass[3][0].Voice.Should().Be(5);
+            bass[4][0].Pitch.Should().Be("Eb3".ToPitch());
+            bass[4][0].Voice.Should().Be(5);
+            bass[5][0].Pitch.Should().Be("D3".ToPitch());
+            bass[5][0].Voice.Should().Be(5);
+            bass[6][0].Pitch.Should().Be("Eb3".ToPitch());
+            bass[6][0].Voice.Should().Be(5);
+            bass[7][0].Pitch.Should().Be("A2".ToPitch());
+            bass[7][0].Voice.Should().Be(5);
+        }
     }
 }
