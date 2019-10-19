@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="3.1">
+  <work>
+    <work-number>Work Number</work-number>
+    <work-title>Work Title</work-title>
+    </work>
+    <movement-number>Movement Number</movement-number>
+    <movement-title>Movement Title</movement-title>
+    <identification>
+    <creator type="creator-key-a">creator value a</creator>
+    <creator type="creator-key-b">creator value b</creator>
+    <creator type="creator-key-c"></creator>
+    <creator>Ludwig van Beethoven</creator>
+    <rights>Sample Copyright</rights>
+    <rights type="rights-key-a">rights value a</rights>
+    <rights type="rights-key-b">rights value b</rights>
+    <encoding>
+      <software>Finale 2012 for Windows</software>
+      <software>Dolet Light for Finale 2012</software>
+      <encoding-description>MusicXML 3.0 example</encoding-description>
+      <encoding-date>2012-09-06</encoding-date>
+      <encoding-date>2012-09-09</encoding-date>
+      <encoder>Michael Good</encoder>
+      <supports attribute="new-system" element="print" type="yes" value="yes"/>
+      <supports attribute="new-page" element="print" type="yes" value="yes"/>
+    </encoding>
+    <miscellaneous>
+      <miscellaneous-field>Misc value without key</miscellaneous-field>
+      <miscellaneous-field name="misc-key-1">Misc value 1</miscellaneous-field>
+      <miscellaneous-field name="misc-key-2">Misc value 2</miscellaneous-field>
+    </miscellaneous>
+    <source>Source Description</source>
+  </identification>
+  <credit page="1">
+    <credit-words default-x="612" default-y="1527.31" justify="center" valign="top" font-size="24">Etude No. 1</credit-words>
+    </credit>
+  <credit page="1">
+    <credit-words default-x="1167.31" default-y="1427.31" justify="right" valign="bottom" font-size="12">Alan Turing</credit-words>
+    </credit>
+  <part-list>
+    <score-part id="P1">
+      <part-name>Piano</part-name>
+      </score-part>
+    </part-list>
+  <part id="P1">
+    <measure number="1" width="133.88">
+      <attributes>
+        <divisions>96</divisions>
+        </attributes>
+      </measure>
+    </part>
+  </score-partwise>

@@ -110,23 +110,71 @@ namespace SightReader.Engine.ScoreBuilder
             return builtScore;
         }
 
-        private ScoreInfo BuildScoreInfo(scorepartwise rawScore) => new ScoreInfo()
-        {
-            WorkTitle = rawScore.work.worktitle,
-            WorkNumber = rawScore.work.worknumber,
-            MovementNumber = rawScore.movementnumber,
-            MovementTitle = rawScore.movementtitle,
-            Creators = rawScore.identification.creator.Length > 0 ?
-                       rawScore.identification.creator.Select(x => new ScoreCreator() { Type = x.type, Name = x.Value }).ToArray() : new ScoreCreator[] { },
-            Rights = rawScore.identification.rights.Length > 0 ?
-                       rawScore.identification.rights.Select(x => new ScoreRights() { Type = x.type, Content = x.Value }).ToArray() : new ScoreRights[] { },
-            Misc = rawScore.identification.miscellaneous.Length > 0 ?
-                       rawScore.identification.miscellaneous.Select(x => new ScoreMisc() { Key = x.name, Value = x.Value }).ToArray() : new ScoreMisc[] { },
-            Source = rawScore.identification.source ?? "",
-            Credits = rawScore.credit.Length > 0 ? rawScore.credit.SelectMany(credit => credit.Items.OfType<formattedtextid>().Select(creditWords => creditWords.Value)).ToArray() : new string[] { },
-            EncodingSoftware = rawScore.identification.encoding.Items.Length > 0 ? rawScore.identification.encoding.Items.Where((x, i) => rawScore.identification.encoding.ItemsElementName[i] == ItemsChoiceType.software).Select(x => x.ToString()).ToArray() : new string[] { },
-            EncodingDates = rawScore.identification.encoding.Items.Length > 0 ? rawScore.identification.encoding.Items.Where((x, i) => rawScore.identification.encoding.ItemsElementName[i] == ItemsChoiceType.encodingdate).OfType<DateTime>().ToArray() : new DateTime[] { },
-        };
+        private ScoreInfo BuildScoreInfo(scorepartwise score) {
+            var info = new ScoreInfo();
+
+            if (score.work != null)
+            {
+                if (score.work.worktitle != null)
+                {
+                    info.WorkTitle = score.work.worktitle;
+                }
+                if (score.work.worknumber != null)
+                {
+                    info.WorkNumber = score.work.worknumber;
+                }
+            }
+
+            if (score.movementnumber != null)
+            {
+                info.MovementNumber = score.movementnumber;
+            }
+            if (score.movementtitle != null)
+            {
+                info.MovementTitle = score.movementtitle;
+            }
+
+            if (score.identification != null)
+            {
+                if (score.identification.creator?.Length > 0)
+                {
+                    info.Creators = score.identification.creator.Select(x => new ScoreCreator() { Type = x.type ?? "", Name = x.Value ?? "" }).ToArray();
+                }
+                if (score.identification.rights?.Length > 0)
+                {
+                    info.Rights = score.identification.rights.Select(x => new ScoreRights() { Type = x.type ?? "", Content = x.Value ?? "" }).ToArray();
+                }
+                if (score.identification.miscellaneous?.Length > 0)
+                {
+                    info.Misc = score.identification.miscellaneous.Select(x => new ScoreMisc() { Key = x.name ?? "", Value = x.Value ?? "" }).ToArray();
+                }
+                if (score.identification.source != null)
+                {
+                    info.Source = score.identification.source;
+                }
+                if (score.identification.encoding?.Items.Length > 0)
+                {
+                   var encodingSoftware = score.identification.encoding.Items.Where((x, i) => score.identification.encoding.ItemsElementName[i] == ItemsChoiceType.software).Select(x => x.ToString()).ToArray();
+                   var encodingDates = score.identification.encoding.Items.Where((x, i) => score.identification.encoding.ItemsElementName[i] == ItemsChoiceType.encodingdate).OfType<DateTime>().ToArray();
+
+                    if (encodingSoftware.Length > 0)
+                    {
+                        info.EncodingSoftware = encodingSoftware;
+                    }
+                    if (encodingDates.Length > 0)
+                    {
+                        info.EncodingDates = encodingDates;
+                    }
+                }
+            }
+
+            if (score.credit?.Length > 0)
+            {
+                info.Credits = score.credit.SelectMany(credit => credit.Items.OfType<formattedtextid>().Select(creditWords => creditWords.Value ?? "")).ToArray();
+            }
+
+            return info;
+        }
 
         private Staff[] BuildPartStaves(scorepartwise rawScore, scorepartwisePartMeasure[] measures)
         {
@@ -145,7 +193,7 @@ namespace SightReader.Engine.ScoreBuilder
                 BuildPartStaffMeasure(measure, staves, beatDurationDirectives, repeatDirectives);
             }
 
-            return staves.ToArray();
+            return staves.Where(x => x.Elements.Length > 0).ToArray();
         }
 
         private void BuildPartStaffMeasure(scorepartwisePartMeasure measure, List<Staff> staves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
