@@ -6,26 +6,15 @@ namespace SightReader.Engine.Interpreter
 {
     public interface IPianoEvent { }
 
-    public readonly struct NotePress : IPianoEvent
+    public struct NotePress : IPianoEvent
     {
-        public byte Pitch { get; }
-        public byte Velocity { get; }
-
-        public NotePress(byte pitch, byte velocity)
-        {
-            Pitch = pitch;
-            Velocity = velocity;
-        }
+        public byte Pitch { get; set; }
+        public byte Velocity { get; set; }
     }
 
-    public readonly struct NoteRelease : IPianoEvent
+    public struct NoteRelease : IPianoEvent
     {
-        public byte Pitch { get; }
-
-        public NoteRelease(byte pitch)
-        {
-            Pitch = pitch;
-        }
+        public byte Pitch { get; set; }
     }
     public enum PedalKind
     {
@@ -34,15 +23,9 @@ namespace SightReader.Engine.Interpreter
         Sustain
     }
 
-    public readonly struct PedalChange : IPianoEvent
+    public struct PedalChange : IPianoEvent
     {
-        public PedalKind Pedal { get; }
-        public byte Position { get; }
-
-        public PedalChange(PedalKind pedal, byte position)
-        {
-            Pedal = pedal;
-            Position = position;
-        }
+        public PedalKind Pedal { get; set; }
+        public byte Position { get; set; }
     }
 }

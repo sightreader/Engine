@@ -32,7 +32,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildBareScoreMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Bare_Score.musicxml", FileMode.Open));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Bare_Score.musicxml", FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             AssertScoreIsEmpty(score);
@@ -41,7 +41,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildBareScoreWithSkeletonMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Bare_Score_With_Skeleton.musicxml", FileMode.Open));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Bare_Score_With_Skeleton.musicxml", FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             AssertScoreIsEmpty(score);
@@ -50,7 +50,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildFullIdentificationMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Full_Identification.musicxml", FileMode.Open));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Full_Identification.musicxml", FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             score.Info.WorkTitle.Should().Be("Work Title");
@@ -134,7 +134,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildFullFeaturedSingleStaffMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             score.Parts.Should().ContainSingle();
@@ -240,7 +240,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildMultiVoiceGrandStaffExcerptMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Multi_Voice_Grand_Staff_Excerpt.musicxml", FileMode.Open));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Multi_Voice_Grand_Staff_Excerpt.musicxml", FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             score.Parts.Should().ContainSingle();
