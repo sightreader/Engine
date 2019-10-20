@@ -149,7 +149,8 @@ namespace SightReader.Engine.Tests
                 Measure = 1,
                 Staff = 1,
                 Voice = 1,
-                Duration = 384m
+                Duration = 384m,
+                NotatedPitch = "C4"
             });
 
             var noteWithTrill = staff.Elements.SelectMany(x => x.Where(y => y.Notations.OfType<Trill>().Count() > 0)

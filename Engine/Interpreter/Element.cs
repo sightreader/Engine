@@ -51,6 +51,7 @@ namespace SightReader.Engine.Interpreter
         bool IsGraceNote { get; set; }
         bool IsRest { get; set; }
         INotation[] Notations { get; set; }
+        string NotatedPitch { get; set; }
     }
 
     public class Element : IElement
@@ -91,5 +92,8 @@ namespace SightReader.Engine.Interpreter
         public bool IsGraceNote { get; set; }
         public bool IsRest { get; set; }
         public INotation[] Notations { get; set; } = new INotation[] { };
+        public string NotatedPitch { get; set; } = "";
+
+        public override string ToString() => NotatedPitch;
     }
 }

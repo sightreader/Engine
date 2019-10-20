@@ -355,6 +355,17 @@ namespace SightReader.Engine.ScoreBuilder
                     case ItemsChoiceType1.pitch:
                         var pitch = rawNote.Items[i] as pitch;
                         el.Pitch = pitch!.ToByte();
+
+                        var alter = pitch!.alterSpecified ? pitch.alter switch {
+                            -2 => "bb",
+                            -1 => "b",
+                            0 => "",
+                            1 => "#",
+                            2 => "##",
+                            _ => ""
+                        } : "";
+
+                        el.NotatedPitch = $"{pitch.step.ToString().ToUpper()}{alter}{pitch.octave}";
                         break;
                 }
             }

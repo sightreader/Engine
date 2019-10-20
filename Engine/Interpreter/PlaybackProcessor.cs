@@ -17,20 +17,25 @@ namespace SightReader.Engine.Interpreter
     }
     public class PlaybackProcessor
     {
-        private List<List<NotePress>> StavesEventQueue = new List<List<NotePress>>(2)
+        private List<List<NotePress>> StavesUpcomingNotePressQueue = new List<List<NotePress>>(2)
         {
             new List<NotePress>(10),
             new List<NotePress>(10)
         };
-        private List<Dictionary<byte, byte>> PressedNotes = new List<Dictionary<byte, byte>>(2)
+        private List<List<NoteRelease>> StavesUpcomingNoteReleaseQueue = new List<List<NoteRelease>>(2)
+        {
+            new List<NoteRelease>(10),
+            new List<NoteRelease>(10)
+        };
+        private List<Dictionary<byte, byte>> StavesPressedNotes = new List<Dictionary<byte, byte>>(2)
         {
             new Dictionary<byte, byte>(88),
             new Dictionary<byte, byte>(88),
         };
         private Range[] STAFF_PLAY_RANGES = new Range[]
         {
-            new Range(21, 60),
-            new Range(60, 108)
+            new Range(60, 108),
+            new Range(21, 60)
         };
 
         private PlaybackContext context;
@@ -44,22 +49,22 @@ namespace SightReader.Engine.Interpreter
             switch (e)
             {
                 case NotePress press:
-                    for (int i = STAFF_PLAY_RANGES.Length - 1; i >= 0; i--)
+                    for (int i = 0; i < STAFF_PLAY_RANGES.Length; i++)
                     {
                         var range = STAFF_PLAY_RANGES[i];
                         if (press.Pitch >= range.Start.Value && press.Pitch < range.End.Value)
                         {
-                            return (byte)(i);
+                            return (byte)(i + 1);
                         }
                     }
                     return 0;
                 case NoteRelease release:
-                    for (int i = STAFF_PLAY_RANGES.Length - 1; i >= 0; i--)
+                    for (int i = 0; i < STAFF_PLAY_RANGES.Length; i++)
                     {
                         var range = STAFF_PLAY_RANGES[i];
                         if (release.Pitch >= range.Start.Value && release.Pitch < range.End.Value)
                         {
-                            return (byte)(i);
+                            return (byte)(i + 1);
                         }
                     }
                     return 0;
@@ -68,28 +73,18 @@ namespace SightReader.Engine.Interpreter
             return 0;
         }
 
-        private int Clock
-        {
-            get
-            {
-                return context.ElementIndex;
-            }
-            set
-            {
-                context.ElementIndex = value;
-            }
-        }
-
         public void Process(IPianoEvent e)
         {
             var staff = GetStaffForEvent(e);
             var elements = context.Score.Parts[0].Staves[staff - 1].Elements;
-            var eventQueue = StavesEventQueue[staff - 1];
-            var pressedNotes = PressedNotes[staff - 1];
+            var noteReleaseQueue = StavesUpcomingNoteReleaseQueue[staff - 1];
+            var notePressQueue = StavesUpcomingNotePressQueue[staff - 1];
+            var pressedNotes = StavesPressedNotes[staff - 1];
+            var clock = context.ElementIndices[staff - 1];
 
-            var previousGroup = Clock > 0 ? elements[Clock - 1] : null;
-            var currentGroup = Clock < elements.Length ? elements[Clock] : null;
-            var nextGroup = Clock < elements.Length - 1 ? elements[Clock + 1] : null;
+            var previousGroup = clock > 0 ? elements[clock - 1] : null;
+            var currentGroup = clock < elements.Length ? elements[clock] : null;
+            var nextGroup = clock < elements.Length - 1 ? elements[clock + 1] : null;
 
             var isFinished = currentGroup == null;
             var isStarting = previousGroup == null;
@@ -109,6 +104,17 @@ namespace SightReader.Engine.Interpreter
                     break;
                 case NoteRelease release:
                     var physicalPitch = release.Pitch;
+
+                    /* Don't release notes before they are pressed */
+                    if (notePressQueue.Exists(x => x.Pitch == physicalPitch))
+                    {
+                        noteReleaseQueue.Add(new NoteRelease()
+                        {
+                            Pitch = physicalPitch
+                        });
+                        return;
+                    }
+
                     var wasMappedPitchFound = pressedNotes.ContainsKey(physicalPitch);
                     
                     if (!wasMappedPitchFound) {
@@ -119,6 +125,7 @@ namespace SightReader.Engine.Interpreter
                     var mappedPitch = pressedNotes[physicalPitch];
                     if (context.Output != null)
                     {
+                        pressedNotes.Remove(physicalPitch);
                         context.Output(new NoteRelease()
                         {
                            Pitch = mappedPitch
@@ -126,23 +133,39 @@ namespace SightReader.Engine.Interpreter
                     }
                     break;
                 case NotePress press:
-                    eventQueue.Add(press);
+                    if (pressedNotes.ContainsKey(press.Pitch) || notePressQueue.Exists(x => x.Pitch == press.Pitch))
+                    {
+                        Console.WriteLine($"Ignoring {press.Pitch} because it's already pressed.");
+                        // You can't press the same key if it's already being held down
+                        // You can only do it on Android devices while testing
+                        return;
+                    }
 
-                    var areEnoughNotesPressed = eventQueue.Count >= currentGroup.Length;
+                    notePressQueue.Add(press);
+
+                    var areEnoughNotesPressed = notePressQueue.Count >= currentGroup!.Length;
 
                     if (areEnoughNotesPressed)
                     {
-                        foreach (NotePress notePress in eventQueue)
+                        foreach (NotePress notePress in notePressQueue)
                         {
-                            ProcessChord(targetNotePress: notePress, notePresses: eventQueue, previousGroup, currentGroup, nextGroup);
+                            ProcessChord(targetNotePress: notePress, notePresses: notePressQueue, previousGroup!, currentGroup, nextGroup!, pressedNotes);
                         }
-                        eventQueue.Clear();
+                        notePressQueue.Clear();
+
+                        foreach (var noteRelease in noteReleaseQueue)
+                        {
+                            Process(noteRelease);
+                        }
+                        noteReleaseQueue.Clear();
+
+                        context.ElementIndices[staff - 1] += 1;
                     }
                     break;
             }
         }
 
-        private void ProcessChord(NotePress targetNotePress, List<NotePress> notePresses, IElement[] previousGroup, IElement[] currentGroup, IElement[] nextGroup)
+        private void ProcessChord(NotePress targetNotePress, List<NotePress> notePresses, IElement[] previousGroup, IElement[] currentGroup, IElement[] nextGroup, Dictionary<byte, byte> pressedNotes)
         {
             // Zero-based index of which note out of the chord's notes is being processed
             var noteIndex = notePresses.OrderBy(x => x.Pitch).ToList().FindIndex(x => x.Pitch == targetNotePress.Pitch);
@@ -157,6 +180,7 @@ namespace SightReader.Engine.Interpreter
 
             if (context.Output != null)
             {
+                pressedNotes[targetNotePress.Pitch] = correctedNote.Pitch;
                 context.Output(new NotePress()
                 {
                     Pitch = correctedNote.Pitch,

@@ -8,7 +8,7 @@ namespace SightReader.Engine.Interpreter
 {
     public class PlaybackContext {
         public Score Score { get; set; } = new Score();
-        public int ElementIndex { get; set; }
+        public int[] ElementIndices { get; set; } = new int[] { 0, 0 };
         public Action<IPianoEvent> Output { get; set; } = delegate { };
     }
     public class Interpreter
@@ -34,26 +34,36 @@ namespace SightReader.Engine.Interpreter
 
         public void ResetPlayback()
         {
-            context.ElementIndex = 0;
+            context.ElementIndices = new int[] { 0, 0 };
         }
 
         public void SeekMeasure(int measureNumber)
         {
-            var lowestElementIndex = int.MaxValue;
+            var lowestElementIndices = new List<int>(2)
+            {
+                int.MaxValue,
+                int.MaxValue
+            };
 
             foreach (var part in context.Score.Parts)
             {
                 foreach (var staff in part.Staves)
                 {
+                    var lowestElementIndex = lowestElementIndices[staff.Number - 1];
                     int indexOfFirstElementForMeasure = staff.Elements.Select(x => x).ToList().FindIndex(x => x.Where(y => y.Measure == measureNumber).Count() > 0);
-                    lowestElementIndex = Math.Min(indexOfFirstElementForMeasure, lowestElementIndex);
+                    lowestElementIndices[staff.Number - 1] = Math.Min(indexOfFirstElementForMeasure, lowestElementIndex);
                 }
             }
 
-            var foundMeasureNumber = lowestElementIndex != -1 && lowestElementIndex != int.MaxValue;
-            if (foundMeasureNumber)
+            for (int i = 0; i < lowestElementIndices.Count; i++)
             {
-                context.ElementIndex = lowestElementIndex;
+                var lowestElementIndex = lowestElementIndices[i];
+                var foundMeasureNumber = (lowestElementIndex != -1 && lowestElementIndex != int.MaxValue);
+
+                if (foundMeasureNumber)
+                {
+                    context.ElementIndices[i] = lowestElementIndex;
+                }
             }
         }
 

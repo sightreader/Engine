@@ -13,7 +13,7 @@ namespace SightReader.Engine.Tests
     public class PlaybackProcessorTests
     {
         [Fact]
-        public void CanPlayNote()
+        public void CanPlayAndReleaseNote()
         {
             var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
             var score = builder.Build();
@@ -37,6 +37,67 @@ namespace SightReader.Engine.Tests
             {
                 Pitch = "C4".ToPitch(),
                 Velocity = notePress.Velocity
+            });
+
+            var noteRelease = new NoteRelease()
+            {
+                Pitch = "C5".ToPitch()
+            };
+            interpreter.Input(noteRelease);
+            outputs.Should().Contain(new NoteRelease()
+            {
+                Pitch = "C4".ToPitch()
+            });
+        }
+        [Fact]
+        public void CanPlaySequenceOfThreeNotes()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+            var outputs = new List<IPianoEvent>();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score);
+            interpreter.SeekMeasure(1);
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                outputs.Add(e);
+            };
+            var notePress1 = new NotePress()
+            {
+                Pitch = "C5".ToPitch(),
+                Velocity = 65
+            };
+            var notePress2 = new NotePress()
+            {
+                Pitch = "D5".ToPitch(),
+                Velocity = 65
+            };
+            var notePress3 = new NotePress()
+            {
+                Pitch = "E5".ToPitch(),
+                Velocity = 65
+            };
+
+            interpreter.Input(notePress1);
+            outputs.Should().Contain(new NotePress()
+            {
+                Pitch = "C4".ToPitch(),
+                Velocity = notePress1.Velocity
+            });
+
+            interpreter.Input(notePress2);
+            outputs.Should().Contain(new NotePress()
+            {
+                Pitch = "D4".ToPitch(),
+                Velocity = notePress2.Velocity
+            });
+
+            interpreter.Input(notePress3);
+            outputs.Should().Contain(new NotePress()
+            {
+                Pitch = "E4".ToPitch(),
+                Velocity = notePress3.Velocity
             });
         }
 

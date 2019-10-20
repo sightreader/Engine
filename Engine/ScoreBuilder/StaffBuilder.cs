@@ -71,7 +71,7 @@ namespace SightReader.Engine.ScoreBuilder
 
         public IEnumerable<List<IElement>> GetElements()
         {
-            return notes.Values.Select(x => x.Values.Where(y => !y.IsRest).ToList<IElement>());
+            return notes.Values.Select(x => x.Values.Where(y => !y.IsRest).ToList<IElement>()).Where(x => x.Count > 0);
         }
     }
 }
