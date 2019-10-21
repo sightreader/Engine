@@ -42,13 +42,13 @@ namespace SightReader.Engine.Server
             return server;
         }
 
-        public void Run()
+        public void Run(IEngineContext engine)
         {
             SetupLogging();
             var config = LoadConfig();
             var clients = new ClientManager();
             var server = CreateWebsocketServer(config);
-            var processor = new CommandProcessor();
+            var processor = new CommandProcessor(engine);
 
             server.Start(socket =>
             {
@@ -87,14 +87,6 @@ namespace SightReader.Engine.Server
                     processor.Process(command, client);
                 };
             });
-
-            string input;
-            do
-            {
-                Console.Write("Type 'exit' to quit: ");
-                input = Console.ReadLine();
-            }
-            while (input != "exit");
         }
     }
 }

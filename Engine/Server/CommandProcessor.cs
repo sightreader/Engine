@@ -143,6 +143,7 @@ namespace SightReader.Engine.Server
         private LoadScoreResponse ProcessLoadScoreRequest(LoadScoreRequest command)
         {
             var error = "";
+            var scoreBytes = new byte[] { };
 
             try
             {
@@ -153,6 +154,12 @@ namespace SightReader.Engine.Server
                     var scoreBuilder = new ScoreBuilder.ScoreBuilder(fileStream);
                     var score = scoreBuilder.Build();
                     Engine.Interpreter.SetScore(score);
+                    Engine.Interpreter.ResetPlayback();
+
+                    using var memoryStream = new MemoryStream();
+                    fileStream.Seek(0, SeekOrigin.Begin);
+                    fileStream.CopyTo(memoryStream);
+                    scoreBytes = memoryStream.ToArray();
                 }
             }
             catch (Exception ex)
@@ -162,6 +169,7 @@ namespace SightReader.Engine.Server
 
             return new LoadScoreResponse()
             {
+                Score = scoreBytes,
                 Error = error
             };
         }

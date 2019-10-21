@@ -114,6 +114,8 @@ namespace SightReader.Engine.Server
         [Key(1)]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
         [Key(2)]
+        public byte[] Score { get; set; } = new byte[] { };
+        [Key(3)]
         public string Error { get; set; } = "";
     }
 
