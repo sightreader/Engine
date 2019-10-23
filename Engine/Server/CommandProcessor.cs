@@ -19,29 +19,47 @@ namespace SightReader.Engine.Server
             Engine = engineContext;
         }
 
-        private void SendReply(ICommand command, Client client)
+        private void SendReply<T>(T command, Client client)
         {
             client.Socket.Send(MessagePackSerializer.Serialize(command));
         }
 
-        public void Process(ICommand rawCommand, Client client)
+        public void Process(Command rawCommand, RequestResponse requestResponse, byte[] bytes, Client client)
         {
+            var json = MessagePackSerializer.ToJson(bytes);
+            Log.Debug($"[CommandProcessor] Message Received: {json}");
+
             switch (rawCommand)
             {
-                case EnumerateMidiDevicesRequest command:
-                    SendReply(ProcessEnumerateMidiDevicesRequest(command), client);
+                case Command.EnumerateMidiDevices when requestResponse == RequestResponse.Request:
+                    {
+                        var command = MessagePackSerializer.Deserialize<EnumerateMidiDevicesRequest>(bytes);
+                        SendReply<EnumerateMidiDevicesResponse>(ProcessEnumerateMidiDevicesRequest(command), client);
+                    }
                     break;
-                case SelectMidiDevicesRequest command:
-                    SendReply(ProcessSelectMidiDevicesRequest(command), client);
+                case Command.SelectMidiDevices when requestResponse == RequestResponse.Request:
+                    {
+                        var command = MessagePackSerializer.Deserialize<SelectMidiDevicesRequest>(bytes);
+                        SendReply<SelectMidiDevicesResponse>(ProcessSelectMidiDevicesRequest(command), client);
+                    }
                     break;
-                case EnumerateScoresRequest command:
-                    SendReply(ProcessEnumerateScoresRequest(command), client);
+                case Command.EnumerateScores when requestResponse == RequestResponse.Request:
+                    {
+                        var command = MessagePackSerializer.Deserialize<EnumerateScoresRequest>(bytes);
+                        SendReply<EnumerateScoresResponse>(ProcessEnumerateScoresRequest(command), client);
+                    }
                     break;
-                case LoadScoreRequest command:
-                    SendReply(ProcessLoadScoreRequest(command), client);
+                case Command.LoadScore when requestResponse == RequestResponse.Request:
+                    {
+                        var command = MessagePackSerializer.Deserialize<LoadScoreRequest>(bytes);
+                        SendReply<LoadScoreResponse>(ProcessLoadScoreRequest(command), client);
+                    }
                     break;
-                case SetPlaybackPositionRequest command:
-                    SendReply(ProcessSetPlaybackPositionRequest(command), client);
+                case Command.SetPlaybackPosition when requestResponse == RequestResponse.Request:
+                    {
+                        var command = MessagePackSerializer.Deserialize<SetPlaybackPositionRequest>(bytes);
+                        SendReply<SetPlaybackPositionResponse>(ProcessSetPlaybackPositionRequest(command), client);
+                    }
                     break;
                 default:
                     Log.Debug($"{client.Id}: [CommandProcessor] Unrecognized command.");
@@ -69,24 +87,45 @@ namespace SightReader.Engine.Server
             {
                 InputDeviceNames = inputs,
                 OutputDeviceNames = outputs,
+                EnabledInputDeviceNames = inputs.Select(x => Engine.MidiInputs.Where(y => x == y.Details.Name).Count() > 0).ToArray(),
+                EnabledOutputDeviceNames = outputs.Select(x => Engine.MidiOutputs.Where(y => x == y.Details.Name).Count() > 0).ToArray(),
                 Error = error
             };
         }
 
         private SelectMidiDevicesResponse ProcessSelectMidiDevicesRequest(SelectMidiDevicesRequest command)
         {
+            var midiAccess = MidiAccessManager.Default;
+
             var inputs = new string[] { };
             var outputs = new string[] { };
             var error = "";
 
-            var midiAccess = MidiAccessManager.Default;
+            try
+            {
+                inputs = midiAccess.Inputs.Select(x => x.Name).ToArray();
+                outputs = midiAccess.Outputs.Select(x => x.Name).ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+            }
 
             foreach (var inputDeviceName in command.InputDeviceNames)
             {
                 try
                 {
-                    var inputDevice = midiAccess.OpenInputAsync(midiAccess.Inputs.Where(x => x.Name == inputDeviceName).First().Id).Result;
-                    Engine.MidiInputs.Add(inputDevice);
+                    if (Engine.MidiInputs.Exists(x => x.Details.Name == inputDeviceName))
+                    {
+                        var input = Engine.MidiInputs.Find(x => x.Details.Name == inputDeviceName);
+                        input.CloseAsync().Wait();
+                        Engine.MidiInputs.Remove(input);
+                    }
+                    else
+                    {
+                        var inputDevice = midiAccess.OpenInputAsync(midiAccess.Inputs.Where(x => x.Name == inputDeviceName).First().Id).Result;
+                        Engine.MidiInputs.Add(inputDevice);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -98,8 +137,17 @@ namespace SightReader.Engine.Server
             {
                 try
                 {
-                    var outputDevice = midiAccess.OpenOutputAsync(midiAccess.Inputs.Where(x => x.Name == outputDeviceName).First().Id).Result;
-                    Engine.MidiOutputs.Add(outputDevice);
+                    if (Engine.MidiOutputs.Exists(x => x.Details.Name == outputDeviceName))
+                    {
+                        var output = Engine.MidiOutputs.Find(x => x.Details.Name == outputDeviceName);
+                        output.CloseAsync().Wait();
+                        Engine.MidiOutputs.Remove(output);
+                    }
+                    else
+                    {
+                        var outputDevice = midiAccess.OpenOutputAsync(midiAccess.Outputs.Where(x => x.Name == outputDeviceName).First().Id).Result;
+                        Engine.MidiOutputs.Add(outputDevice);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -109,7 +157,11 @@ namespace SightReader.Engine.Server
 
             return new SelectMidiDevicesResponse()
             {
-                Error = error
+                Error = error,
+                InputDeviceNames = inputs,
+                OutputDeviceNames = outputs,
+                EnabledInputDeviceNames = inputs.Select(x => Engine.MidiInputs.Exists(y => x == y.Details.Name)).ToArray(),
+                EnabledOutputDeviceNames = outputs.Select(x => Engine.MidiOutputs.Exists(y => x == y.Details.Name)).ToArray(),
             };
         }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -21,14 +22,20 @@ namespace SightReader.Engine.Server
             }
         }
 
-        public Client FindById(Guid clientId)
+        public Client? FindById(Guid clientId)
         {
+            if (!ClientsById.ContainsKey(clientId))
+            {
+                return null;
+            }
+
             return ClientsById[clientId];
         }
 
         public void Register(Client client)
         {
             ClientsById[client.Id] = client;
+            Log.Debug($"{client.Id}: [Register].");
         }
 
         public void Unregister(Client client)

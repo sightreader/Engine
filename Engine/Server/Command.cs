@@ -26,142 +26,163 @@ namespace SightReader.Engine.Server
     }
 
     [MessagePackObject]
+    public class GenericCommand
+    {
+        [Key("Command")]
+        public Command Command { get; set; } = Command.SetPlaybackPosition;
+        [Key("Kind")]
+        public RequestResponse Kind { get; set; } = RequestResponse.Response;
+    }
+
+    [MessagePackObject]
     public class EnumerateMidiDevicesRequest : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.EnumerateMidiDevices;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
     }
 
     [MessagePackObject]
     public class EnumerateMidiDevicesResponse : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.EnumerateMidiDevices;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
-        [Key(2)]
-        public string[] InputDeviceNames { get; set; } = new string[] { };
-        [Key(3)]
-        public string[] OutputDeviceNames { get; set; } = new string[] { };
-        [Key(4)]
+        [Key("Error")]
         public string Error { get; set; } = "";
+        [Key("InputDeviceNames")]
+        public string[] InputDeviceNames { get; set; } = new string[] { };
+        [Key("OutputDeviceNames")]
+        public string[] OutputDeviceNames { get; set; } = new string[] { };
+        [Key("EnabledInputDeviceNames")]
+        public bool[] EnabledInputDeviceNames { get; set; } = new bool[] { };
+        [Key("EnabledOutputDeviceNames")]
+        public bool[] EnabledOutputDeviceNames { get; set; } = new bool[] { };
     }
 
     [MessagePackObject]
     public class SelectMidiDevicesRequest : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.SelectMidiDevices;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
-        [Key(2)]
+        [Key("InputDeviceNames")]
         public string[] InputDeviceNames { get; set; } = new string[] { };
-        [Key(3)]
+        [Key("OutputDeviceNames")]
         public string[] OutputDeviceNames { get; set; } = new string[] { };
     }
 
     [MessagePackObject]
     public class SelectMidiDevicesResponse : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.SelectMidiDevices;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
-        [Key(2)]
+        [Key("Error")]
         public string Error { get; set; } = "";
+        [Key("InputDeviceNames")]
+        public string[] InputDeviceNames { get; set; } = new string[] { };
+        [Key("OutputDeviceNames")]
+        public string[] OutputDeviceNames { get; set; } = new string[] { };
+        [Key("EnabledInputDeviceNames")]
+        public bool[] EnabledInputDeviceNames { get; set; } = new bool[] { };
+        [Key("EnabledOutputDeviceNames")]
+        public bool[] EnabledOutputDeviceNames { get; set; } = new bool[] { };
     }
 
     [MessagePackObject]
     public class EnumerateScoresRequest: ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.EnumerateScores;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
     }
 
     [MessagePackObject]
     public class EnumerateScoresResponse : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.EnumerateScores;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
-        [Key(2)]
-        public string[] FilePaths { get; set; } = new string[] { };
-        [Key(3)]
+        [Key("Error")]
         public string Error { get; set; } = "";
+        [Key("FilePaths")]
+        public string[] FilePaths { get; set; } = new string[] { };
     }
 
     [MessagePackObject]
     public class LoadScoreRequest : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.LoadScore;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
-        [Key(2)]
+        [Key("FilePaths")]
         public string FilePath { get; set; } = "";
     }
 
     [MessagePackObject]
     public class LoadScoreResponse : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.LoadScore;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
-        [Key(2)]
+        [Key("Score")]
         public byte[] Score { get; set; } = new byte[] { };
-        [Key(3)]
+        [Key("Error")]
         public string Error { get; set; } = "";
     }
 
     [MessagePackObject]
     public class SetScoreDisplayPositionRequest : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.SetScoreDisplayPosition;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
-        [Key(2)]
+        [Key("MeasureNumber")]
         public int MeasureNumber { get; set; }
-        [Key(3)]
+        [Key("GroupIndex")]
         public int GroupIndex { get; set; }
     }
 
     [MessagePackObject]
     public class SetScoreDisplayPositionResponse : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.SetScoreDisplayPosition;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
-        [Key(2)]
+        [Key("Error")]
         public string Error { get; set; } = "";
     }
 
     [MessagePackObject]
     public class SetPlaybackPositionRequest : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.SetPlaybackPosition;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
-        [Key(2)]
+        [Key("MeasureNumber")]
         public int MeasureNumber { get; set; }
     }
 
     [MessagePackObject]
     public class SetPlaybackPositionResponse : ICommand
     {
-        [Key(0)]
+        [Key("Command")]
         public Command Command { get; set; } = Command.SetPlaybackPosition;
-        [Key(1)]
+        [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
-        [Key(2)]
+        [Key("Error")]
         public string Error { get; set; } = "";
     }
 }

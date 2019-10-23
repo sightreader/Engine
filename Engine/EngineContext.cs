@@ -10,8 +10,8 @@ namespace SightReader.Engine
     {
         List<IMidiInput> MidiInputs { get; set; }
         List<IMidiOutput> MidiOutputs { get; set; }
-        public Interpreter.Interpreter Interpreter { get; set; }
-        public Introducer.IntroducerClient Introducer { get; set; }
-        public Server.CommandServer Server { get; set; }
+        Interpreter.Interpreter Interpreter { get; set; }
+        Introducer.IntroducerClient Introducer { get; set; }
+        Server.CommandServer Server { get; set; }
     }
 }
