@@ -114,6 +114,8 @@ namespace SightReader.Engine.Server
         public string Error { get; set; } = "";
         [Key("FilePaths")]
         public string[] FilePaths { get; set; } = new string[] { };
+        [Key("ActiveScoreFilePath")]
+        public string ActiveScoreFilePath { get; set; } = "";
     }
 
     [MessagePackObject]
@@ -123,7 +125,7 @@ namespace SightReader.Engine.Server
         public Command Command { get; set; } = Command.LoadScore;
         [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
-        [Key("FilePaths")]
+        [Key("FilePath")]
         public string FilePath { get; set; } = "";
     }
 
@@ -134,10 +136,12 @@ namespace SightReader.Engine.Server
         public Command Command { get; set; } = Command.LoadScore;
         [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
-        [Key("Score")]
-        public byte[] Score { get; set; } = new byte[] { };
         [Key("Error")]
         public string Error { get; set; } = "";
+        [Key("Score")]
+        public byte[] Score { get; set; } = new byte[] { };
+        [Key("ActiveScoreFilePath")]
+        public string ActiveScoreFilePath { get; set; } = "";
     }
 
     [MessagePackObject]
@@ -184,5 +188,7 @@ namespace SightReader.Engine.Server
         public RequestResponse Kind { get; set; } = RequestResponse.Response;
         [Key("Error")]
         public string Error { get; set; } = "";
+        [Key("MeasureNumber")]
+        public int MeasureNumber { get; set; }
     }
 }

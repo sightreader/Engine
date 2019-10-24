@@ -8,6 +8,7 @@ namespace SightReader.Engine.Interpreter
 {
     public class PlaybackContext {
         public Score Score { get; set; } = new Score();
+        public string ScoreFilePath { get; set; } = "";
         public int[] ElementIndices { get; set; } = new int[] { 0, 0 };
         public Action<IPianoEvent> Output { get; set; } = delegate { };
     }
@@ -27,9 +28,18 @@ namespace SightReader.Engine.Interpreter
             processor = new PlaybackProcessor(context);
         }
 
-        public void SetScore(Score score)
+        public string ScoreFilePath
+        {
+            get
+            {
+                return context.ScoreFilePath;
+            }
+        }
+
+        public void SetScore(Score score, string scoreFilePath)
         {
             context.Score = score;
+            context.ScoreFilePath = scoreFilePath;
         }
 
         public void ResetPlayback()

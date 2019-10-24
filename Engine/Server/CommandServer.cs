@@ -125,7 +125,19 @@ namespace SightReader.Engine.Server
 
                 socket.OnError = error =>
                 {
-                    Log.Error($"[Socket] Error: {error.ToString()}");
+                    if (socket.IsAvailable)
+                    {
+                        socket.Close();
+                        Log.Error($"[Socket] Error (socket closed): {error.ToString()}");
+                        var client = clients.FindById(socket.ConnectionInfo.Id);
+                        if (client != null)
+                        {
+                            clients.Unregister(client);
+                        }
+                    } else
+                    {
+                        Log.Error($"[Socket] Error: {error.ToString()}");
+                    }
                 };
 
                 socket.OnBinary = bytes =>

@@ -111,47 +111,53 @@ namespace SightReader.Engine.Server
                 error = ex.Message;
             }
 
-            foreach (var inputDeviceName in command.InputDeviceNames)
+            if (command.InputDeviceNames != null)
             {
-                try
+                foreach (var inputDeviceName in command.InputDeviceNames)
                 {
-                    if (Engine.MidiInputs.Exists(x => x.Details.Name == inputDeviceName))
+                    try
                     {
-                        var input = Engine.MidiInputs.Find(x => x.Details.Name == inputDeviceName);
-                        input.CloseAsync().Wait();
-                        Engine.MidiInputs.Remove(input);
+                        if (Engine.MidiInputs.Exists(x => x.Details.Name == inputDeviceName))
+                        {
+                            var input = Engine.MidiInputs.Find(x => x.Details.Name == inputDeviceName);
+                            input.CloseAsync().Wait();
+                            Engine.MidiInputs.Remove(input);
+                        }
+                        else
+                        {
+                            var inputDevice = midiAccess.OpenInputAsync(midiAccess.Inputs.Where(x => x.Name == inputDeviceName).First().Id).Result;
+                            Engine.MidiInputs.Add(inputDevice);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        var inputDevice = midiAccess.OpenInputAsync(midiAccess.Inputs.Where(x => x.Name == inputDeviceName).First().Id).Result;
-                        Engine.MidiInputs.Add(inputDevice);
+                        error += $"Error opening input device '{inputDeviceName}': {ex.Message}\n";
                     }
-                }
-                catch (Exception ex)
-                {
-                    error += $"Error opening input device '{inputDeviceName}': {ex.Message}\n";
                 }
             }
 
-            foreach (var outputDeviceName in command.OutputDeviceNames)
+            if (command.OutputDeviceNames != null)
             {
-                try
+                foreach (var outputDeviceName in command.OutputDeviceNames)
                 {
-                    if (Engine.MidiOutputs.Exists(x => x.Details.Name == outputDeviceName))
+                    try
                     {
-                        var output = Engine.MidiOutputs.Find(x => x.Details.Name == outputDeviceName);
-                        output.CloseAsync().Wait();
-                        Engine.MidiOutputs.Remove(output);
+                        if (Engine.MidiOutputs.Exists(x => x.Details.Name == outputDeviceName))
+                        {
+                            var output = Engine.MidiOutputs.Find(x => x.Details.Name == outputDeviceName);
+                            output.CloseAsync().Wait();
+                            Engine.MidiOutputs.Remove(output);
+                        }
+                        else
+                        {
+                            var outputDevice = midiAccess.OpenOutputAsync(midiAccess.Outputs.Where(x => x.Name == outputDeviceName).First().Id).Result;
+                            Engine.MidiOutputs.Add(outputDevice);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        var outputDevice = midiAccess.OpenOutputAsync(midiAccess.Outputs.Where(x => x.Name == outputDeviceName).First().Id).Result;
-                        Engine.MidiOutputs.Add(outputDevice);
+                        error += $"Error opening output device '{outputDeviceName}': {ex.Message}\n";
                     }
-                }
-                catch (Exception ex)
-                {
-                    error += $"Error opening output device '{outputDeviceName}': {ex.Message}\n";
                 }
             }
 
@@ -188,6 +194,7 @@ namespace SightReader.Engine.Server
             return new EnumerateScoresResponse()
             {
                 FilePaths = filePaths,
+                ActiveScoreFilePath = Engine.Interpreter.ScoreFilePath,
                 Error = error
             };
         }
@@ -200,12 +207,12 @@ namespace SightReader.Engine.Server
             try
             {
                 var isPathJailedToScoresDir = Path.GetFullPath(command.FilePath).StartsWith(Path.Combine(Environment.CurrentDirectory, "scores"), StringComparison.OrdinalIgnoreCase);
-                if (isPathJailedToScoresDir && Path.GetExtension(command.FilePath) == ".musicxml" && File.Exists(command.FilePath))
+                if (isPathJailedToScoresDir && (Path.GetExtension(command.FilePath) == ".musicxml" || Path.GetExtension(command.FilePath) == ".xml") && File.Exists(command.FilePath))
                 {
                     var fileStream = new FileStream(command.FilePath, FileMode.Open, FileAccess.Read);
                     var scoreBuilder = new ScoreBuilder.ScoreBuilder(fileStream);
                     var score = scoreBuilder.Build();
-                    Engine.Interpreter.SetScore(score);
+                    Engine.Interpreter.SetScore(score, command.FilePath);
                     Engine.Interpreter.ResetPlayback();
 
                     using var memoryStream = new MemoryStream();
@@ -222,6 +229,7 @@ namespace SightReader.Engine.Server
             return new LoadScoreResponse()
             {
                 Score = scoreBytes,
+                ActiveScoreFilePath = Engine.Interpreter.ScoreFilePath,
                 Error = error
             };
         }
