@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace SightReader.Engine.Server
 {
@@ -19,6 +20,14 @@ namespace SightReader.Engine.Server
             get
             {
                 return ClientsById.Values.Count;
+            }
+        }
+
+        public Client[] Clients
+        {
+            get
+            {
+                return ClientsById.Values.ToArray();
             }
         }
 

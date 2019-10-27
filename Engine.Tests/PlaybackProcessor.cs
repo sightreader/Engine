@@ -12,15 +12,17 @@ namespace SightReader.Engine.Tests
 {
     public class PlaybackProcessorTests
     {
+        private static string EtudeNo1ScoreFilePath = @"Assets\Etude_No._1.musicxml";
+
         [Fact]
         public void CanPlayAndReleaseNote()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
             var score = builder.Build();
             var outputs = new List<IPianoEvent>();
 
             var interpreter = new Interpreter.Interpreter();
-            interpreter.SetScore(score);
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
             interpreter.SeekMeasure(1);
             interpreter.Output += (IPianoEvent e) =>
             {
@@ -52,12 +54,12 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanPlaySequenceOfThreeNotes()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
             var score = builder.Build();
             var outputs = new List<IPianoEvent>();
 
             var interpreter = new Interpreter.Interpreter();
-            interpreter.SetScore(score);
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
             interpreter.SeekMeasure(1);
             interpreter.Output += (IPianoEvent e) =>
             {
@@ -104,12 +106,12 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanPlayChord()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
             var score = builder.Build();
             var outputs = new List<IPianoEvent>();
 
             var interpreter = new Interpreter.Interpreter();
-            interpreter.SetScore(score);
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
             interpreter.SeekMeasure(3);
             interpreter.Output += (IPianoEvent e) =>
             {
@@ -172,12 +174,12 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanPlayChordOutOfOrder()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
             var score = builder.Build();
             var outputs = new List<IPianoEvent>();
 
             var interpreter = new Interpreter.Interpreter();
-            interpreter.SetScore(score);
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
             interpreter.SeekMeasure(3);
             interpreter.Output += (IPianoEvent e) =>
             {
@@ -235,6 +237,283 @@ namespace SightReader.Engine.Tests
                 Pitch = "C3".ToPitch(),
                 Velocity = notePress1.Velocity
             });
+        }
+
+        [Fact]
+        public void CanPlaySingleNoteTies()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
+            interpreter.SeekMeasure(19);
+
+            var playedPitches = new List<byte>();
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                if (e is NotePress press)
+                {
+                    playedPitches.Add(press.Pitch);
+                }
+            };
+
+            playedPitches.Should().BeEmpty();
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "C5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "D5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch(), "E4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "E5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch(), "E4".ToPitch(), "G4".ToPitch() });
+        }
+
+        [Fact]
+        public void CanPlayTiesAndNonTiesInChords()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
+            interpreter.SeekMeasure(20);
+
+            var playedPitches = new List<byte>();
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                if (e is NotePress press)
+                {
+                    playedPitches.Add(press.Pitch);
+                }
+            };
+
+            playedPitches.Should().BeEmpty();
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "C5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEmpty();
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "D5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch(), "E4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "E5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch(), "E4".ToPitch(), "G4".ToPitch() });
+        }
+
+        [Fact]
+        public void CanPlayGraceNote()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
+            interpreter.SeekMeasure(18);
+
+            var playedPitches = new List<byte>();
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                if (e is NotePress press)
+                {
+                    playedPitches.Add(press.Pitch);
+                }
+            };
+
+            playedPitches.Should().BeEmpty();
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "C5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "D4".ToPitch() });
+
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "D5".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "D4".ToPitch(), "E4".ToPitch() });
+        }
+
+        [Fact]
+        public void CanPlayArpeggiatedDefault()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
+            interpreter.SeekMeasure(21);
+
+            var playedPitches = new List<byte>();
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                if (e is NotePress press)
+                {
+                    playedPitches.Add(press.Pitch);
+                }
+            };
+
+            playedPitches.Should().BeEmpty();
+
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "D6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch() });
+
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "E6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch(), "E4".ToPitch() });
+
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "F6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch(), "E4".ToPitch(), "G4".ToPitch() });
+
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "G6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "C4".ToPitch(), "E4".ToPitch(), "G4".ToPitch(), "C5".ToPitch() });
+        }
+
+        [Fact]
+        public void CanPlayArpeggiatedUp()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
+            interpreter.SeekMeasure(22);
+
+            var playedPitches = new List<byte>();
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                if (e is NotePress press)
+                {
+                    playedPitches.Add(press.Pitch);
+                }
+            };
+
+            playedPitches.Should().BeEmpty();
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "C6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "D4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "D6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "D4".ToPitch(), "F4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "E6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "D4".ToPitch(), "F4".ToPitch(), "A4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "F6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "D4".ToPitch(), "F4".ToPitch(), "A4".ToPitch(), "D5".ToPitch() });
+        }
+
+        [Fact]
+        public void CanPlayArpeggiatedDown()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
+            interpreter.SeekMeasure(23);
+
+            var playedPitches = new List<byte>();
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                if (e is NotePress press)
+                {
+                    playedPitches.Add(press.Pitch);
+                }
+            };
+
+            playedPitches.Should().BeEmpty();
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "C6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "E5".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "D6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "E5".ToPitch(), "B4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "E6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "E5".ToPitch(), "B4".ToPitch(), "G4".ToPitch() });
+
+            interpreter.Input(new NotePress()
+            {
+                Pitch = "F6".ToPitch(),
+                Velocity = 100
+            });
+            playedPitches.Should().BeEquivalentTo(new byte[] { "E5".ToPitch(), "B4".ToPitch(), "G4".ToPitch(), "E4".ToPitch() });
         }
     }
 }

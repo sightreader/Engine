@@ -151,10 +151,10 @@ namespace SightReader.Engine.Server
         public Command Command { get; set; } = Command.SetScoreDisplayPosition;
         [Key("Kind")]
         public RequestResponse Kind { get; set; } = RequestResponse.Request;
-        [Key("MeasureNumber")]
-        public int MeasureNumber { get; set; }
-        [Key("GroupIndex")]
-        public int GroupIndex { get; set; }
+        [Key("MeasureNumbers")]
+        public int[] MeasureNumbers { get; set; } = new int[] { -1, -1 };
+        [Key("GroupIndices")]
+        public int[] GroupIndices { get; set; } = new int[] { -1, -1 };
     }
 
     [MessagePackObject]

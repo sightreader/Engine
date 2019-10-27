@@ -180,7 +180,7 @@ namespace SightReader.Engine.Tests
             ).ElementAt(1);
             noteWithInvertedMordent.Measure.Should().Be(17);
             noteWithInvertedMordent.Notations[0].As<Mordent>().IsInverted = true;
-            noteWithInvertedMordent.Pitch.Should().Be("C4".ToPitch());
+            noteWithInvertedMordent.Pitch.Should().Be("D5".ToPitch());
 
             var graceNote = staff.Elements.SelectMany(x => x.Where(y => y.IsGraceNote)).First();
             graceNote.Measure.Should().Be(18);
@@ -193,28 +193,28 @@ namespace SightReader.Engine.Tests
             var arpeggiatedDefault = arpeggiatedGroups[0].ToArray();
             arpeggiatedGroups.Should().HaveCount(3);
 
-            arpeggiatedDefault[0].Measure.Should().Be(20);
+            arpeggiatedDefault[0].Measure.Should().Be(21);
             arpeggiatedDefault[0].Pitch.Should().Be("C4".ToPitch());
             arpeggiatedDefault[1].Pitch.Should().Be("E4".ToPitch());
             arpeggiatedDefault[2].Pitch.Should().Be("G4".ToPitch());
             arpeggiatedDefault[3].Pitch.Should().Be("C5".ToPitch());
 
             var arpeggiatedUp = arpeggiatedGroups[1].ToArray();
-            arpeggiatedUp[0].Measure.Should().Be(21);
+            arpeggiatedUp[0].Measure.Should().Be(22);
             arpeggiatedUp[0].Pitch.Should().Be("D4".ToPitch());
             arpeggiatedUp[1].Pitch.Should().Be("F4".ToPitch());
             arpeggiatedUp[2].Pitch.Should().Be("A4".ToPitch());
             arpeggiatedUp[3].Pitch.Should().Be("D5".ToPitch());
 
             var arpeggiatedDown = arpeggiatedGroups[2].ToArray();
-            arpeggiatedDown[0].Measure.Should().Be(22);
+            arpeggiatedDown[0].Measure.Should().Be(23);
             arpeggiatedDown[0].Pitch.Should().Be("E4".ToPitch());
             arpeggiatedDown[1].Pitch.Should().Be("G4".ToPitch());
             arpeggiatedDown[2].Pitch.Should().Be("B4".ToPitch());
             arpeggiatedDown[3].Pitch.Should().Be("E5".ToPitch());
 
 
-            var measureWithVoices = staff.Elements.Where(x => x.Where(y => y.Measure == 25).Count() > 0
+            var measureWithVoices = staff.Elements.Where(x => x.Where(y => y.Measure == 26).Count() > 0
             ).ToArray();
             measureWithVoices.Should().HaveCount(4);
 

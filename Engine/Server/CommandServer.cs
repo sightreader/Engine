@@ -78,11 +78,7 @@ namespace SightReader.Engine.Server
             var config = LoadConfig();
             var clients = new ClientManager();
             var server = CreateWebsocketServer(config);
-            var processor = new CommandProcessor(engine);
-
-            //var serializedData = MessagePackSerializer.Serialize(new EnumerateMidiDevicesRequest(), MessagePack.Resolvers.ContractlessStandardResolver.Instance);
-            //var json = MessagePackSerializer.ToJson(serializedData);
-            //var a = 1;
+            var processor = new CommandProcessor(engine, clients);
 
             server.Start(socket =>
             {

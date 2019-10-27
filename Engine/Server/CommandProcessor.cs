@@ -7,16 +7,73 @@ using System.Linq;
 using MessagePack;
 using System.IO;
 using System.Text.RegularExpressions;
+using SightReader.Engine.Interpreter;
 
 namespace SightReader.Engine.Server
 {
     public class CommandProcessor
     {
         private IEngineContext Engine;
+        private ClientManager ClientManager;
 
-        public CommandProcessor(IEngineContext engineContext)
+        public CommandProcessor(IEngineContext engineContext, ClientManager clientManager)
         {
             Engine = engineContext;
+            ClientManager = clientManager;
+            Engine.Interpreter.Output += OnInterpreterOutput;
+            Engine.Interpreter.Processed += OnInterpreterProcessed;
+        }
+
+        private void OnInterpreterOutput(IPianoEvent e)
+        {
+            foreach (var output in Engine.MidiOutputs)
+            {
+                switch (e)
+                {
+                    case PedalChange pedal:
+                        output.Send(new byte[]
+                        {
+                            MidiEvent.CC,
+                            pedal.Pedal switch
+                            {
+                               PedalKind.UnaCorda => 67,
+                               PedalKind.Sostenuto => 66,
+                               PedalKind.Sustain => 64,
+                               _ => 64
+                            },
+                            pedal.Position
+                        }, 0, 3, 0);
+                        break;
+                    case NoteRelease release:
+                        output.Send(new byte[]
+                        {
+                            MidiEvent.NoteOff,
+                            release.Pitch,
+                            64 /* Default release velocity */
+                        }, 0, 3, 0);
+                        break;
+                    case NotePress press:
+                        output.Send(new byte[]
+                        {
+                            MidiEvent.NoteOn,
+                            press.Pitch,
+                            press.Velocity
+                        }, 0, 3, 0);
+                        break;
+                }
+            }
+        }
+
+        private void OnInterpreterProcessed()
+        {
+            foreach (var client in ClientManager.Clients)
+            {
+                SendReply(new SetScoreDisplayPositionRequest()
+                {
+                    MeasureNumbers = Engine.Interpreter.GetMeasureNumbers(),
+                    GroupIndices = Engine.Interpreter.GetMeasureGroupIndices()
+                }, client);
+            }
         }
 
         private void SendReply<T>(T command, Client client)
@@ -113,6 +170,7 @@ namespace SightReader.Engine.Server
 
             if (command.InputDeviceNames != null)
             {
+                UnregisterMidiInputs();
                 foreach (var inputDeviceName in command.InputDeviceNames)
                 {
                     try
@@ -134,6 +192,7 @@ namespace SightReader.Engine.Server
                         error += $"Error opening input device '{inputDeviceName}': {ex.Message}\n";
                     }
                 }
+                RegisterMidiInputs();
             }
 
             if (command.OutputDeviceNames != null)
@@ -169,6 +228,60 @@ namespace SightReader.Engine.Server
                 EnabledInputDeviceNames = inputs.Select(x => Engine.MidiInputs.Exists(y => x == y.Details.Name)).ToArray(),
                 EnabledOutputDeviceNames = outputs.Select(x => Engine.MidiOutputs.Exists(y => x == y.Details.Name)).ToArray(),
             };
+        }
+
+        private void UnregisterMidiInputs()
+        {
+            foreach (var midiInput in Engine.MidiInputs)
+            {
+                midiInput.MessageReceived -= OnMidiInputMessageReceived;
+            }
+        }
+
+        private void RegisterMidiInputs()
+        {
+            foreach (var midiInput in Engine.MidiInputs)
+            {
+                midiInput.MessageReceived += OnMidiInputMessageReceived;
+            }
+        }
+
+        private void OnMidiInputMessageReceived(object sender, MidiReceivedEventArgs e)
+        {
+            switch (e.Data[0])
+            {
+                case MidiEvent.NoteOff:
+                    {
+                        var pitch = e.Data[1];
+                        Engine.Interpreter.Input(new NoteRelease()
+                        {
+                            Pitch = pitch
+                        });
+                    }
+                    break;
+                case MidiEvent.NoteOn:
+                    {
+                        var pitch = e.Data[1];
+                        var velocity = e.Data[2];
+                        Engine.Interpreter.Input(new NotePress()
+                        {
+                            Pitch = pitch,
+                            Velocity = velocity
+                        });
+                    }
+                    break;
+                case MidiEvent.CC:
+                    {
+                        var pedalKind = e.Data[1];
+                        var position = e.Data[2];
+                        Engine.Interpreter.Input(new PedalChange()
+                        {
+                            Pedal = PedalKind.Sustain,
+                            Position = position
+                        });
+                    }
+                    break;
+            }
         }
 
         private EnumerateScoresResponse ProcessEnumerateScoresRequest(EnumerateScoresRequest command)

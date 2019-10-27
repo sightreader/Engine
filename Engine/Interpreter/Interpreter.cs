@@ -9,8 +9,10 @@ namespace SightReader.Engine.Interpreter
     public class PlaybackContext {
         public Score Score { get; set; } = new Score();
         public string ScoreFilePath { get; set; } = "";
+        public int[] LastProcessedElementIndices { get; set; } = new int[] { 0, 0 };
         public int[] ElementIndices { get; set; } = new int[] { 0, 0 };
         public Action<IPianoEvent> Output { get; set; } = delegate { };
+        public Action Processed { get; set; } = delegate { };
     }
     public class Interpreter
     {
@@ -18,12 +20,14 @@ namespace SightReader.Engine.Interpreter
         private PlaybackProcessor processor;
 
         public event Action<IPianoEvent> Output = delegate { };
+        public event Action Processed = delegate { };
 
         public Interpreter()
         {
             context = new PlaybackContext()
             {
-                Output = SendOutput
+                Output = SendOutput,
+                Processed = SendProcessed 
             };
             processor = new PlaybackProcessor(context);
         }
@@ -36,10 +40,67 @@ namespace SightReader.Engine.Interpreter
             }
         }
 
+        public int[] GetMeasureNumbers()
+        {
+            var measureNumbers = new int[] { -1, -1 };
+
+            for (var i = 0; i < context.LastProcessedElementIndices.Length; i++)
+            {
+                var elementIndex = context.LastProcessedElementIndices[i];
+                var staffIndex = i;
+
+                var elements = context.Score.Parts[0].Staves[staffIndex].Elements[elementIndex];
+                if (elements.Length > 0)
+                {
+                    measureNumbers[staffIndex] = Math.Max(measureNumbers[staffIndex], elements.First().Measure);
+                }
+            }
+
+            return measureNumbers;
+        }
+
+        public int[] GetMeasureGroupIndices()
+        {
+            var currentMeasureNumbers = GetMeasureNumbers();
+            var groupIndices = new int[] { -1, -1 };
+
+            for (var i = 0; i < context.LastProcessedElementIndices.Length; i++)
+            {
+                var elementIndex = context.LastProcessedElementIndices[i];
+                var staffIndex = i;
+
+                var elementGroups = context.Score.Parts[0].Staves[staffIndex].Elements;
+
+                var currentMeasureNumber = currentMeasureNumbers[staffIndex];
+                if (currentMeasureNumber <= 2)
+                {
+                    var lowestMeasureNumber = elementGroups[0][0].Measure;
+                    if (currentMeasureNumber == lowestMeasureNumber)
+                    {
+                        groupIndices[staffIndex] = elementIndex;
+                        continue;
+                    }
+                }
+
+                for (var lastElementIndexOfPreviousMeasure = elementIndex; lastElementIndexOfPreviousMeasure >= 0; lastElementIndexOfPreviousMeasure--)
+                {
+                    var elementGroup = elementGroups[lastElementIndexOfPreviousMeasure];
+                    if (elementGroup.Length > 0 && elementGroup.First().Measure < currentMeasureNumber)
+                    {
+                        groupIndices[staffIndex] = elementIndex - (lastElementIndexOfPreviousMeasure + 1);
+                        break;
+                    }
+                }
+            }
+
+            return groupIndices;
+        }
+
         public void SetScore(Score score, string scoreFilePath)
         {
             context.Score = score;
             context.ScoreFilePath = scoreFilePath;
+            ResetPlayback();
         }
 
         public void ResetPlayback()
@@ -49,6 +110,12 @@ namespace SightReader.Engine.Interpreter
 
         public void SeekMeasure(int measureNumber)
         {
+            if (measureNumber == 0)
+            {
+                ResetPlayback();
+                return;
+            }
+
             var lowestElementIndices = new List<int>(2)
             {
                 int.MaxValue,
@@ -79,10 +146,12 @@ namespace SightReader.Engine.Interpreter
 
         internal void SendOutput(IPianoEvent e)
         {
-            if (Output != null)
-            {
-                Output(e);
-            }
+            Output?.Invoke(e);
+        }
+
+        internal void SendProcessed()
+        {
+            Processed?.Invoke();
         }
 
         public void Input(IPianoEvent e)

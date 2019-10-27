@@ -116,7 +116,7 @@ namespace SightReader.Engine.Interpreter
                     }
 
                     var wasMappedPitchFound = pressedNotes.ContainsKey(physicalPitch);
-                    
+
                     if (!wasMappedPitchFound) {
                         Trace.WriteLine($"No pitch mapping found for {physicalPitch}, but it was a previously pressed note.");
                         return;
@@ -128,7 +128,7 @@ namespace SightReader.Engine.Interpreter
                         pressedNotes.Remove(physicalPitch);
                         context.Output(new NoteRelease()
                         {
-                           Pitch = mappedPitch
+                            Pitch = mappedPitch
                         });
                     }
                     break;
@@ -143,13 +143,15 @@ namespace SightReader.Engine.Interpreter
 
                     notePressQueue.Add(press);
 
-                    var areEnoughNotesPressed = notePressQueue.Count >= currentGroup!.Length;
+                    var filteredCurrentGroup = GetFilteredCurrentGroup(currentGroup!);
+                    var numRequiredNotesPressed = filteredCurrentGroup.Count();
+                    var areEnoughNotesPressed = notePressQueue.Count >= numRequiredNotesPressed;
 
                     if (areEnoughNotesPressed)
                     {
                         foreach (NotePress notePress in notePressQueue)
                         {
-                            ProcessChord(targetNotePress: notePress, notePresses: notePressQueue, previousGroup!, currentGroup, nextGroup!, pressedNotes);
+                            ProcessChord(targetNotePress: notePress, notePresses: notePressQueue, previousGroup!, filteredCurrentGroup, nextGroup!, pressedNotes);
                         }
                         notePressQueue.Clear();
 
@@ -159,22 +161,31 @@ namespace SightReader.Engine.Interpreter
                         }
                         noteReleaseQueue.Clear();
 
+                        context.LastProcessedElementIndices[staff - 1] = context.ElementIndices[staff - 1];
                         context.ElementIndices[staff - 1] += 1;
+
+                        context.Processed?.Invoke();
                     }
                     break;
             }
         }
 
-        private void ProcessChord(NotePress targetNotePress, List<NotePress> notePresses, IElement[] previousGroup, IElement[] currentGroup, IElement[] nextGroup, Dictionary<byte, byte> pressedNotes)
+        private IElement[] GetFilteredCurrentGroup(IElement[] currentGroup)
+        {
+            /* Was originally used for ties, but modified to remove ties earlier at score building. */
+            return currentGroup;
+        }
+
+        private void ProcessChord(NotePress targetNotePress, List<NotePress> notePresses, IElement[] previousGroup, IElement[] filteredCurrentGroup, IElement[] nextGroup, Dictionary<byte, byte> pressedNotes)
         {
             // Zero-based index of which note out of the chord's notes is being processed
             var noteIndex = notePresses.OrderBy(x => x.Pitch).ToList().FindIndex(x => x.Pitch == targetNotePress.Pitch);
 
-            var correctedNote = currentGroup[noteIndex];
+            var correctedNote = filteredCurrentGroup[noteIndex];
 
             if (correctedNote == null)
             {
-                Trace.WriteLine($"No corrected note found in current group {currentGroup}.");
+                Trace.WriteLine($"No corrected note found in filtered current group {filteredCurrentGroup}.");
                 return;
             }
 

@@ -342,9 +342,18 @@ namespace SightReader.Engine.ScoreBuilder
                     case ItemsChoiceType1.duration:
                         var duration = (decimal)rawNote.Items[i];
                         el.Duration = duration;
+
+                        if (el.IsGraceNote)
+                        {
+                            el.Duration = Math.Max(1, el.Duration);
+                        }
                         break;
                     case ItemsChoiceType1.grace:
                         el.IsGraceNote = true;
+                        /* Grace notes have a default duration of 0. This would cause them
+                         * to be interpreted as a chord (in the same group as the next note).
+                         * So we assign a minimum duration of 1. */
+                        el.Duration = Math.Max(1, el.Duration);
                         break;
                     case ItemsChoiceType1.rest:
                         el.IsRest = true;
