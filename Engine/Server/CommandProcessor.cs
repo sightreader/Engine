@@ -286,18 +286,25 @@ namespace SightReader.Engine.Server
 
         private EnumerateScoresResponse ProcessEnumerateScoresRequest(EnumerateScoresRequest command)
         {
-            var filePaths = new string[] { };
+            var filePaths = new List<string>();
             var error = "";
 
             try
             {
-                filePaths = Directory.GetFiles(Path.Combine(Environment.CurrentDirectory, "scores"), "*.musicxml", new EnumerationOptions()
+                filePaths.AddRange(Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores"), "*.musicxml", new EnumerationOptions()
                 {
                     MatchCasing = MatchCasing.CaseInsensitive,
                     MatchType = MatchType.Simple,
                     RecurseSubdirectories = true,
                     ReturnSpecialDirectories = false
-                });
+                }));
+                filePaths.AddRange(Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores"), "*.xml", new EnumerationOptions()
+                {
+                    MatchCasing = MatchCasing.CaseInsensitive,
+                    MatchType = MatchType.Simple,
+                    RecurseSubdirectories = true,
+                    ReturnSpecialDirectories = false
+                }));
             }
             catch (Exception ex)
             {
@@ -306,7 +313,7 @@ namespace SightReader.Engine.Server
 
             return new EnumerateScoresResponse()
             {
-                FilePaths = filePaths,
+                FilePaths = filePaths.ToArray(),
                 ActiveScoreFilePath = Engine.Interpreter.ScoreFilePath,
                 Error = error
             };
@@ -319,7 +326,7 @@ namespace SightReader.Engine.Server
 
             try
             {
-                var isPathJailedToScoresDir = Path.GetFullPath(command.FilePath).StartsWith(Path.Combine(Environment.CurrentDirectory, "scores"), StringComparison.OrdinalIgnoreCase);
+                var isPathJailedToScoresDir = Path.GetFullPath(command.FilePath).StartsWith(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores"), StringComparison.OrdinalIgnoreCase);
                 if (isPathJailedToScoresDir && (Path.GetExtension(command.FilePath) == ".musicxml" || Path.GetExtension(command.FilePath) == ".xml") && File.Exists(command.FilePath))
                 {
                     var fileStream = new FileStream(command.FilePath, FileMode.Open, FileAccess.Read);

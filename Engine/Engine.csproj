@@ -4,8 +4,12 @@
     <Nullable>enable</Nullable>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>SightReader.Engine</RootNamespace>
+    <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Config.Net" Version="4.13.7" />
+    <PackageReference Include="Config.Net.Json" Version="4.13.7" />
+    <PackageReference Include="Fleck" Version="1.1.0" />
     <PackageReference Include="managed-midi" Version="1.9.12" />
     <PackageReference Include="MessagePack" Version="1.8.74" />
     <PackageReference Include="MessagePackAnalyzer" Version="1.8.74" />
@@ -14,12 +18,7 @@
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="4.6.0" />
     <PackageReference Include="System.Linq" Version="4.3.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\config\src\Config.Net.Json\Config.Net.Json.csproj" />
-    <ProjectReference Include="..\..\config\src\Config.Net\Config.Net.csproj" />
-    <ProjectReference Include="..\..\Fleck\src\Fleck\Fleck.csproj" />
-    <ProjectReference Include="..\..\websocket-client\src\Websocket.Client\Websocket.Client.csproj" />
+    <PackageReference Include="Websocket.Client" Version="3.2.56" />
   </ItemGroup>
 
 </Project>

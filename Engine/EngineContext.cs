@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Commons.Music.Midi;
 using System.Linq;
+using Commons.Music.Midi;
 
 namespace SightReader.Engine
 {
