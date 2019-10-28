@@ -343,7 +343,7 @@ namespace SightReader.Engine.Server
             }
             catch (Exception ex)
             {
-                error = ex.Message;
+                error = ex.Message + "\n" + ex.StackTrace;
             }
 
             return new LoadScoreResponse()

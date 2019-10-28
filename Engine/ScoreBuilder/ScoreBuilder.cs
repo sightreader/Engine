@@ -107,6 +107,23 @@ namespace SightReader.Engine.ScoreBuilder
                     Staves = BuildPartStaves(rawScore, x.measure.ToArray())
                 }).ToArray()
             };
+
+            // Remove empty staves
+            foreach (var part in builtScore.Parts)
+            {
+                var stavesList = part.Staves.ToList();
+
+                for (var i = stavesList.Count() - 1; i >= 0; i--)
+                {
+                    var staff = stavesList[i];
+                    if (staff.Elements.Length == 0)
+                    {
+                        stavesList.RemoveAt(i);
+                    }
+                }
+                part.Staves = stavesList.ToArray();
+            }
+
             return builtScore;
         }
 
@@ -209,56 +226,59 @@ namespace SightReader.Engine.ScoreBuilder
                 new StaffBuilder(2)
             };
 
-            foreach (var item in measure.Items)
+            if (measure.Items != null)
             {
-                switch (item)
+                foreach (var item in measure.Items)
                 {
-                    case attributes attributes:
-                        BuildPartStaffMeasureAttributes(attributes, beatDurationDirectives, measureNumber);
-                        break;
-                    case barline barline:
-                        BuildPartStaffMeasureBarline(barline, repeatDirectives, measureNumber);
-                        break;
-                    case note rawNote:
-                        Element el = BuildPartStaffMeasureElement(rawNote, measureNumber);
-                        /* If there are more than 2 staves, dynamically extend the array */
-                        if (el.Staff > staffBuilders.Length)
-                        {
-                            var staffBuildersExtended = new List<StaffBuilder>(staffBuilders);
-                            staffBuildersExtended.Add(new StaffBuilder(staffBuilders.Length));
-                            staffBuilders = staffBuildersExtended.ToArray();
-                        }
+                    switch (item)
+                    {
+                        case attributes attributes:
+                            BuildPartStaffMeasureAttributes(attributes, beatDurationDirectives, measureNumber);
+                            break;
+                        case barline barline:
+                            BuildPartStaffMeasureBarline(barline, repeatDirectives, measureNumber);
+                            break;
+                        case note rawNote:
+                            Element el = BuildPartStaffMeasureElement(rawNote, measureNumber);
+                            /* If there are more than 2 staves, dynamically extend the array */
+                            if (el.Staff > staffBuilders.Length)
+                            {
+                                var staffBuildersExtended = new List<StaffBuilder>(staffBuilders);
+                                staffBuildersExtended.Add(new StaffBuilder(staffBuilders.Length));
+                                staffBuilders = staffBuildersExtended.ToArray();
+                            }
 
-                        for (int i = 0; i < staffBuilders.Length; i++)
-                        {
-                            staffBuilders[i].ProcessNote(el);
-                        }
-                        break;
-                    case backup backup:
-                        for (int i = 0; i < staffBuilders.Length; i++)
-                        {
-                            staffBuilders[i].RewindClock(backup.duration);
-                        }
-                        break;
-                    case forward forward:
-                        if (forward.voice?.Length > 0)
-                        {
-                            throw new NotSupportedException($"Measure {measureNumber} has a <forward> element with voice {forward.voice}. Forwarding specific voices is not currently supported.");
-                        }
-
-                        if (forward.staff?.Length > 0)
-                        {
-                            var staffForClock = forward.staff.ToByte() - 1;
-                            staffBuilders[staffForClock].AdvanceClock(forward.duration);
-                        }
-                        else
-                        {
                             for (int i = 0; i < staffBuilders.Length; i++)
                             {
-                                staffBuilders[i].RewindClock(forward.duration);
+                                staffBuilders[i].ProcessNote(el);
                             }
-                        }
-                        break;
+                            break;
+                        case backup backup:
+                            for (int i = 0; i < staffBuilders.Length; i++)
+                            {
+                                staffBuilders[i].RewindClock(backup.duration);
+                            }
+                            break;
+                        case forward forward:
+                            if (forward.voice?.Length > 0)
+                            {
+                                throw new NotSupportedException($"Measure {measureNumber} has a <forward> element with voice {forward.voice}. Forwarding specific voices is not currently supported.");
+                            }
+
+                            if (forward.staff?.Length > 0)
+                            {
+                                var staffForClock = forward.staff.ToByte() - 1;
+                                staffBuilders[staffForClock].AdvanceClock(forward.duration);
+                            }
+                            else
+                            {
+                                for (int i = 0; i < staffBuilders.Length; i++)
+                                {
+                                    staffBuilders[i].RewindClock(forward.duration);
+                                }
+                            }
+                            break;
+                    }
                 }
             }
 
@@ -386,6 +406,11 @@ namespace SightReader.Engine.ScoreBuilder
         {
             foreach (var rawNotation in rawNotations)
             {
+                if (rawNotation?.Items == null)
+                {
+                    continue;
+                }
+
                 foreach (var item in rawNotation.Items)
                 {
                     switch (item)
@@ -457,6 +482,11 @@ namespace SightReader.Engine.ScoreBuilder
 
         private void BuildPartStaffMeasureElementArticulations(articulations rawArticulations, List<INotation> notations)
         {
+            if (rawArticulations?.Items == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < rawArticulations.Items.Length; i++)
             {
                 var rawArticulationType = rawArticulations.ItemsElementName[i];
@@ -511,6 +541,11 @@ namespace SightReader.Engine.ScoreBuilder
 
         private void BuildPartStaffMeasureElementOrnaments(ornaments ornaments, List<INotation> notations)
         {
+            if (ornaments?.Items == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < ornaments.Items.Length; i++)
             {
                 var ornamentType = ornaments.ItemsElementName[i];
