@@ -274,7 +274,7 @@ namespace SightReader.Engine.ScoreBuilder
                             {
                                 for (int i = 0; i < staffBuilders.Length; i++)
                                 {
-                                    staffBuilders[i].RewindClock(forward.duration);
+                                    staffBuilders[i].AdvanceClock(forward.duration);
                                 }
                             }
                             break;

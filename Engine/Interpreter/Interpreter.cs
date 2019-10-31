@@ -17,7 +17,7 @@ namespace SightReader.Engine.Interpreter
     public class Interpreter
     {
         private PlaybackContext context;
-        private PlaybackProcessor processor;
+        private SingleVoicePlaybackProcessor processor;
 
         public event Action<IPianoEvent> Output = delegate { };
         public event Action Processed = delegate { };
@@ -29,7 +29,7 @@ namespace SightReader.Engine.Interpreter
                 Output = SendOutput,
                 Processed = SendProcessed 
             };
-            processor = new PlaybackProcessor(context);
+            processor = new SingleVoicePlaybackProcessor(context);
         }
 
         public string ScoreFilePath
