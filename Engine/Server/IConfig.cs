@@ -21,6 +21,12 @@ namespace SightReader.Engine.Server
         /// </summary>
         [Option(DefaultValue = "skirt multiple enlarging update yearbook why")]
         string SharedSecret { get; set; }
+
+        /// <summary>
+        /// Path to the root folder of score data.
+        /// </summary>
+        [Option(DefaultValue = "default")]
+        string ScoresPath { get; set; }
     }
 }
  

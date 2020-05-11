@@ -78,7 +78,10 @@ namespace SightReader.Engine.Server
             var config = LoadConfig();
             var clients = new ClientManager();
             var server = CreateWebsocketServer(config);
-            var processor = new CommandProcessor(engine, clients);
+            var processor = new CommandProcessor(config, engine, clients);
+
+            Console.WriteLine("Using the following configuration:");
+            Console.WriteLine($"\tPath to Scores: {config.ScoresPath}");
 
             server.Start(socket =>
             {

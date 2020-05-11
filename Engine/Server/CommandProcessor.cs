@@ -13,11 +13,13 @@ namespace SightReader.Engine.Server
 {
     public class CommandProcessor
     {
+        private IConfig Config;
         private IEngineContext Engine;
         private ClientManager ClientManager;
 
-        public CommandProcessor(IEngineContext engineContext, ClientManager clientManager)
+        public CommandProcessor(IConfig config, IEngineContext engineContext, ClientManager clientManager)
         {
+            Config = config;
             Engine = engineContext;
             ClientManager = clientManager;
             Engine.Interpreter.Output += OnInterpreterOutput;
@@ -91,31 +93,31 @@ namespace SightReader.Engine.Server
                 case Command.EnumerateMidiDevices when requestResponse == RequestResponse.Request:
                     {
                         var command = MessagePackSerializer.Deserialize<EnumerateMidiDevicesRequest>(bytes);
-                        SendReply<EnumerateMidiDevicesResponse>(ProcessEnumerateMidiDevicesRequest(command), client);
+                        SendReply(ProcessEnumerateMidiDevicesRequest(command), client);
                     }
                     break;
                 case Command.SelectMidiDevices when requestResponse == RequestResponse.Request:
                     {
                         var command = MessagePackSerializer.Deserialize<SelectMidiDevicesRequest>(bytes);
-                        SendReply<SelectMidiDevicesResponse>(ProcessSelectMidiDevicesRequest(command), client);
+                        SendReply(ProcessSelectMidiDevicesRequest(command), client);
                     }
                     break;
                 case Command.EnumerateScores when requestResponse == RequestResponse.Request:
                     {
                         var command = MessagePackSerializer.Deserialize<EnumerateScoresRequest>(bytes);
-                        SendReply<EnumerateScoresResponse>(ProcessEnumerateScoresRequest(command), client);
+                        SendReply(ProcessEnumerateScoresRequest(command), client);
                     }
                     break;
                 case Command.LoadScore when requestResponse == RequestResponse.Request:
                     {
                         var command = MessagePackSerializer.Deserialize<LoadScoreRequest>(bytes);
-                        SendReply<LoadScoreResponse>(ProcessLoadScoreRequest(command), client);
+                        SendReply(ProcessLoadScoreRequest(command), client);
                     }
                     break;
                 case Command.SetPlaybackPosition when requestResponse == RequestResponse.Request:
                     {
                         var command = MessagePackSerializer.Deserialize<SetPlaybackPositionRequest>(bytes);
-                        SendReply<SetPlaybackPositionResponse>(ProcessSetPlaybackPositionRequest(command), client);
+                        SendReply(ProcessSetPlaybackPositionRequest(command), client);
                     }
                     break;
                 default:
@@ -276,7 +278,7 @@ namespace SightReader.Engine.Server
                         var position = e.Data[2];
                         Engine.Interpreter.Input(new PedalChange()
                         {
-                            Pedal = PedalKind.Sustain,
+                            Pedal = (PedalKind)pedalKind,
                             Position = position
                         });
                     }
@@ -289,16 +291,30 @@ namespace SightReader.Engine.Server
             var filePaths = new List<string>();
             var error = "";
 
+            var scorePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores");
+
+            if (Config.ScoresPath != "default")
+            {
+                if (Directory.Exists(Config.ScoresPath))
+                {
+                    scorePath = Config.ScoresPath;
+                }
+                else
+                {
+                    error = $"Custom score path {Config.ScoresPath} does not exist.";
+                }
+            }
+
             try
             {
-                filePaths.AddRange(Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores"), "*.musicxml", new EnumerationOptions()
+                filePaths.AddRange(Directory.GetFiles(scorePath, "*.musicxml", new EnumerationOptions()
                 {
                     MatchCasing = MatchCasing.CaseInsensitive,
                     MatchType = MatchType.Simple,
                     RecurseSubdirectories = true,
                     ReturnSpecialDirectories = false
                 }));
-                filePaths.AddRange(Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores"), "*.xml", new EnumerationOptions()
+                filePaths.AddRange(Directory.GetFiles(scorePath, "*.xml", new EnumerationOptions()
                 {
                     MatchCasing = MatchCasing.CaseInsensitive,
                     MatchType = MatchType.Simple,
@@ -323,10 +339,22 @@ namespace SightReader.Engine.Server
         {
             var error = "";
             var scoreBytes = new byte[] { };
+            var scorePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores");
+
+            if (Config.ScoresPath != "default")
+            {
+                if (Directory.Exists(scorePath))
+                {
+                    scorePath = Config.ScoresPath;
+                } else
+                {
+                    error = $"Custom score path {Config.ScoresPath} does not exist.";
+                }
+            }
 
             try
             {
-                var isPathJailedToScoresDir = Path.GetFullPath(command.FilePath).StartsWith(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "scores"), StringComparison.OrdinalIgnoreCase);
+                var isPathJailedToScoresDir = Path.GetFullPath(command.FilePath).StartsWith(scorePath, StringComparison.OrdinalIgnoreCase);
                 if (isPathJailedToScoresDir && (Path.GetExtension(command.FilePath) == ".musicxml" || Path.GetExtension(command.FilePath) == ".xml") && File.Exists(command.FilePath))
                 {
                     var fileStream = new FileStream(command.FilePath, FileMode.Open, FileAccess.Read);
