@@ -106,6 +106,7 @@ namespace SightReader.Engine.Interpreter
         public void ResetPlayback()
         {
             context.ElementIndices = new int[] { 0, 0 };
+            processor = new SingleVoicePlaybackProcessor(context);
         }
 
         public void SeekMeasure(int measureNumber)
