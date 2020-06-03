@@ -8,14 +8,14 @@ using System.Linq;
 
 namespace SightReader.Engine.Interpreter
 {
-    public enum PlayMode
+    public enum MultiVoicePlayMode
     {
         Chord,
         Trill,
         Turn,
         Mordent,
     }
-    public class PlaybackProcessor
+    public class MultiVoicePlaybackProcessor
     {
         private List<List<NotePress>> StavesUpcomingNotePressQueue = new List<List<NotePress>>(2)
         {
@@ -40,7 +40,7 @@ namespace SightReader.Engine.Interpreter
 
         private PlaybackContext context;
 
-        public PlaybackProcessor(PlaybackContext context) {
+        public MultiVoicePlaybackProcessor(PlaybackContext context) {
             this.context = context;
         }
 

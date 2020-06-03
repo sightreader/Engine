@@ -515,5 +515,54 @@ namespace SightReader.Engine.Tests
             });
             playedPitches.Should().BeEquivalentTo(new byte[] { "E5".ToPitch(), "B4".ToPitch(), "G4".ToPitch(), "E4".ToPitch() });
         }
+
+        [Fact]
+        public void CanPlayPedals()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(EtudeNo1ScoreFilePath, FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            var interpreter = new Interpreter.Interpreter();
+            interpreter.SetScore(score, EtudeNo1ScoreFilePath);
+            interpreter.SeekMeasure(0);
+
+            var pedalChanges = new List<PedalChange>();
+            interpreter.Output += (IPianoEvent e) =>
+            {
+                if (e is PedalChange pedal)
+                {
+                    pedalChanges.Add(pedal);
+                }
+            };
+
+            pedalChanges.Should().BeEmpty();
+
+            var sustainPedalChange = new PedalChange()
+            {
+                Pedal = PedalKind.Sustain,
+                Position = 28
+            };
+
+            var sostenutoPedalChange = new PedalChange()
+            {
+                Pedal = PedalKind.Sostenuto,
+                Position = 28
+            };
+
+            var unaCordaPedalChange = new PedalChange()
+            {
+                Pedal = PedalKind.UnaCorda,
+                Position = 28
+            };
+
+            interpreter.Input(sustainPedalChange);
+            pedalChanges.Should().BeEquivalentTo(new PedalChange[] { sustainPedalChange });
+
+            interpreter.Input(sostenutoPedalChange);
+            pedalChanges.Should().BeEquivalentTo(new PedalChange[] { sustainPedalChange, sostenutoPedalChange });
+
+            interpreter.Input(unaCordaPedalChange);
+            pedalChanges.Should().BeEquivalentTo(new PedalChange[] { sustainPedalChange, unaCordaPedalChange });
+        }
     }
 }
