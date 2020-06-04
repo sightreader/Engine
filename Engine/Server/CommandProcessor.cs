@@ -80,6 +80,11 @@ namespace SightReader.Engine.Server
 
         private void SendReply<T>(T command, Client client)
         {
+            if (client.Socket == null)
+            {
+                return;
+            }
+
             client.Socket.Send(MessagePackSerializer.Serialize(command));
         }
 
@@ -265,11 +270,26 @@ namespace SightReader.Engine.Server
                     {
                         var pitch = e.Data[1];
                         var velocity = e.Data[2];
-                        Engine.Interpreter.Input(new NotePress()
+
+                        /** The Yamaha P-45 sends Note Off messages as Note On 
+                         * messages with zero velocity. */
+                        var isNoteOnActuallyNoteOff = velocity == 0;
+
+                        if (isNoteOnActuallyNoteOff)
                         {
-                            Pitch = pitch,
-                            Velocity = velocity
-                        });
+                            Engine.Interpreter.Input(new NoteRelease()
+                            {
+                                Pitch = pitch
+                            });
+                        }
+                        else
+                        {
+                            Engine.Interpreter.Input(new NotePress()
+                            {
+                                Pitch = pitch,
+                                Velocity = velocity
+                            });
+                        }
                     }
                     break;
                 case MidiEvent.CC:
@@ -346,7 +366,8 @@ namespace SightReader.Engine.Server
                 if (Directory.Exists(scorePath))
                 {
                     scorePath = Config.ScoresPath;
-                } else
+                }
+                else
                 {
                     error = $"Custom score path {Config.ScoresPath} does not exist.";
                 }

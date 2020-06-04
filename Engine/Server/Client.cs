@@ -11,15 +11,9 @@ namespace SightReader.Engine.Server
         /// <summary>
         /// The underlying websocket connection.
         /// </summary>
-        public IWebSocketConnection Socket { get; set; }
+        public IWebSocketConnection? Socket { get; set; }
 
-        public Guid Id
-        {
-            get
-            {
-                return Socket.ConnectionInfo.Id;
-            }
-        }
+        public Guid Id => Socket == null ? Guid.Empty : Socket.ConnectionInfo.Id;
 
         public bool Equals(Client x, Client y)
         {
@@ -28,6 +22,11 @@ namespace SightReader.Engine.Server
             if (ReferenceEquals(x, null) || ReferenceEquals(y, null))
                 return false;
 
+            if (x.Socket == null || y.Socket == null)
+            {
+                return false;
+            }
+
             return x.Socket.ConnectionInfo.Id == y.Socket.ConnectionInfo.Id;
         }
 
@@ -35,7 +34,7 @@ namespace SightReader.Engine.Server
         {
             if (Object.ReferenceEquals(client, null)) return 0;
 
-            return client.Socket.ConnectionInfo.Id.GetHashCode();
+            return client.Socket == null ? -1 : client.Socket.ConnectionInfo.Id.GetHashCode();
         }
     }
 }
