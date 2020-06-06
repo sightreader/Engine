@@ -363,7 +363,7 @@ namespace SightReader.Engine.Server
 
             if (Config.ScoresPath != "default")
             {
-                if (Directory.Exists(scorePath))
+                if (Directory.Exists(Config.ScoresPath))
                 {
                     scorePath = Config.ScoresPath;
                 }
@@ -381,6 +381,12 @@ namespace SightReader.Engine.Server
                     var fileStream = new FileStream(command.FilePath, FileMode.Open, FileAccess.Read);
                     var scoreBuilder = new ScoreBuilder.ScoreBuilder(fileStream);
                     var score = scoreBuilder.Build();
+
+                    if (score.Parts.Length == 0)
+                    {
+                        error = $"Score {command.FilePath} does not have any MusicXML parts.";
+                    }
+
                     Engine.Interpreter.SetScore(score, command.FilePath);
                     Engine.Interpreter.ResetPlayback();
 

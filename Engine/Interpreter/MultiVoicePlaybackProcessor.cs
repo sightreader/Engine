@@ -75,6 +75,15 @@ namespace SightReader.Engine.Interpreter
 
         public void Process(IPianoEvent e)
         {
+            /* Pedal events don't advance the score or interact with notes in any way. */
+            if (e is PedalChange) {
+                if (context.Output != null)
+                {
+                    context.Output(e);
+                }
+                return;
+            }
+
             var staff = GetStaffForEvent(e);
             var elements = context.Score.Parts[0].Staves[staff - 1].Elements;
             var noteReleaseQueue = StavesUpcomingNoteReleaseQueue[staff - 1];
@@ -96,12 +105,6 @@ namespace SightReader.Engine.Interpreter
 
             switch (e)
             {
-                case PedalChange pedal:
-                    if (context.Output != null)
-                    {
-                        context.Output(pedal);
-                    }
-                    break;
                 case NoteRelease release:
                     var physicalPitch = release.Pitch;
 
@@ -136,6 +139,16 @@ namespace SightReader.Engine.Interpreter
                     if (pressedNotes.ContainsKey(press.Pitch) || notePressQueue.Exists(x => x.Pitch == press.Pitch))
                     {
                         Console.WriteLine($"Ignoring {press.Pitch} because it's already pressed.");
+
+                        if (pressedNotes.ContainsKey(press.Pitch))
+                        {
+                            Console.WriteLine($"   -> Pressed Notes Pitches: {new String(pressedNotes.SelectMany(a => $"{a.Key}: {a.Value} {Environment.NewLine}").ToArray())}");
+                        }
+
+                        if (notePressQueue.Exists(x => x.Pitch == press.Pitch))
+                        {
+                            Console.WriteLine($"   -> Note Press Queue Pitches: {new String(notePressQueue.SelectMany(a => $"{a.Pitch}: {a.Velocity} {Environment.NewLine}").ToArray())}");
+                        }
                         // You can't press the same key if it's already being held down
                         // You can only do it on Android devices while testing
                         return;
