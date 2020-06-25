@@ -40,7 +40,8 @@ namespace SightReader.Engine.Interpreter
 
         private PlaybackContext context;
 
-        public SingleVoicePlaybackProcessor(PlaybackContext context) {
+        public SingleVoicePlaybackProcessor(PlaybackContext context)
+        {
             this.context = context;
         }
 
@@ -98,10 +99,6 @@ namespace SightReader.Engine.Interpreter
             var isFinished = currentGroup == null;
             var isStarting = previousGroup == null;
 
-            if (isFinished)
-            {
-                return;
-            }
 
             switch (e)
             {
@@ -130,6 +127,11 @@ namespace SightReader.Engine.Interpreter
                     }
                     break;
                 case NotePress press:
+                    if (isFinished)
+                    {
+                        return;
+                    }
+
                     ProcessChord(physicalNotePressed: press, previousGroup!, currentGroup!, nextGroup!, pressedNotes);
 
                     context.LastProcessedElementIndices[staff - 1] = context.ElementIndices[staff - 1];

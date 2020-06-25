@@ -32,7 +32,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildBareScoreMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Bare_Score.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(Path.Combine("Assets", "Bare_Score.musicxml"), FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             AssertScoreIsEmpty(score);
@@ -41,7 +41,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildBareScoreWithSkeletonMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Bare_Score_With_Skeleton.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(Path.Combine("Assets", "Bare_Score_With_Skeleton.musicxml"), FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             AssertScoreIsEmpty(score);
@@ -50,7 +50,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildFullIdentificationMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Full_Identification.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(Path.Combine("Assets", "Full_Identification.musicxml"), FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             score.Info.WorkTitle.Should().Be("Work Title");
@@ -134,7 +134,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildFullFeaturedSingleStaffMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Etude_No._1.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(Path.Combine("Assets", "Etude_No._1.musicxml"), FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             score.Parts.Should().ContainSingle();
@@ -241,7 +241,7 @@ namespace SightReader.Engine.Tests
         [Fact]
         public void CanBuildMultiVoiceGrandStaffExcerptMusicXml()
         {
-            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(@"Assets\Multi_Voice_Grand_Staff_Excerpt.musicxml", FileMode.Open, FileAccess.Read));
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(Path.Combine("Assets", "Multi_Voice_Grand_Staff_Excerpt.musicxml"), FileMode.Open, FileAccess.Read));
             var score = builder.Build();
 
             score.Parts.Should().ContainSingle();
@@ -298,6 +298,80 @@ namespace SightReader.Engine.Tests
             bass[6][0].Voice.Should().Be(5);
             bass[7][0].Pitch.Should().Be("A2".ToPitch());
             bass[7][0].Voice.Should().Be(5);
+        }
+
+        [Fact]
+        public void CanConvertSamePitchSlursToTies()
+        {
+            var builder = new ScoreBuilder.ScoreBuilder(new FileStream(Path.Combine("Assets", "Slurs_To_Ties.musicxml"), FileMode.Open, FileAccess.Read));
+            var score = builder.Build();
+
+            score.Parts.Should().ContainSingle();
+            score.Parts.First().Staves.Should().HaveCount(1);
+
+            var staff = score.Parts.First().Staves.First();
+
+            staff.Elements[0][0].Should().BeEquivalentTo(new Element()
+            {
+                Pitch = "C5".ToPitch(),
+                IsChordChild = false,
+                Measure = 1,
+                Staff = 1,
+                Voice = 1,
+                Duration = 128m,
+                Notations = new INotation[] { new Tie()
+                {
+                    Type = StartStopContinue.Start,
+                    Number = 1
+                } },
+                NotatedPitch = "C5"
+            });
+
+            staff.Elements[0][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Start,
+                Number = 1
+            });
+            staff.Elements[1][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Stop,
+                Number = 1
+            });
+
+
+            staff.Elements[2][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Start,
+                Number = 1
+            });
+            staff.Elements[3][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Stop,
+                Number = 1
+            });
+            staff.Elements[3][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Start,
+                Number = 1
+            });
+            staff.Elements[4][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Stop,
+                Number = 1
+            });
+
+
+
+            staff.Elements[5][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Start,
+                Number = 1
+            });
+            staff.Elements[6][0].Notations.Should().ContainEquivalentOf(new Tie()
+            {
+                Type = StartStopContinue.Stop,
+                Number = 1
+            });
         }
     }
 }
