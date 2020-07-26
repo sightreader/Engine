@@ -68,6 +68,7 @@ namespace SightReader.Engine.ScoreBuilder
     public class ScoreBuilder
     {
         private Stream stream;
+        private int measureCounter = 1;
 
         public ScoreBuilder(Stream stream)
         {
@@ -371,7 +372,7 @@ namespace SightReader.Engine.ScoreBuilder
 
         private void BuildPartStaffMeasure(scorepartwisePartMeasure measure, List<List<List<IElement>>> elementStaves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
         {
-            var measureNumber = measure.number.ToInt();
+            var measureNumber = measureCounter++;
             var staffBuilders = new StaffBuilder[] {
                 new StaffBuilder(1),
                 new StaffBuilder(2)
