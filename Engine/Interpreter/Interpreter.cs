@@ -105,6 +105,7 @@ namespace SightReader.Engine.Interpreter
 
         public void ResetPlayback()
         {
+            context.LastProcessedElementIndices = new int[] { 0, 0 };
             context.ElementIndices = new int[] { 0, 0 };
             processor = new SingleVoicePlaybackProcessor(context);
         }
@@ -156,7 +157,11 @@ namespace SightReader.Engine.Interpreter
         }
 
         public void Input(IPianoEvent e)
-        {
+        {if ( context.Score.Parts.Length == 0)
+            {
+                return;
+            }
+
             processor.Process(e);
         }
     }

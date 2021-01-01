@@ -12,7 +12,7 @@ namespace SightReader.Engine.Tests
 {
     public class PlaybackProcessorTests
     {
-        private static string EtudeNo1ScoreFilePath = @"Assets\Etude_No._1.musicxml";
+        private static string EtudeNo1ScoreFilePath = Path.Combine("Assets", "Etude_No._1.musicxml");
 
         [Fact]
         public void CanPlayAndReleaseNote()

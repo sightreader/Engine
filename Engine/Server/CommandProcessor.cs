@@ -139,8 +139,8 @@ namespace SightReader.Engine.Server
 
             try
             {
-                inputs = MidiAccessManager.Default.Inputs.Select(x => x.Name).ToArray();
-                outputs = MidiAccessManager.Default.Outputs.Select(x => x.Name).ToArray();
+                inputs = MidiAccessManager.Default.Inputs.Select(x => $"{x.Id}: {x.Name}").ToArray();
+                outputs = MidiAccessManager.Default.Outputs.Select(x => $"{x.Id}: {x.Name}").ToArray();
             }
             catch (Exception ex)
             {
@@ -151,8 +151,8 @@ namespace SightReader.Engine.Server
             {
                 InputDeviceNames = inputs,
                 OutputDeviceNames = outputs,
-                EnabledInputDeviceNames = inputs.Select(x => Engine.MidiInputs.Where(y => x == y.Details.Name).Count() > 0).ToArray(),
-                EnabledOutputDeviceNames = outputs.Select(x => Engine.MidiOutputs.Where(y => x == y.Details.Name).Count() > 0).ToArray(),
+                EnabledInputDeviceNames = inputs.Select(x => Engine.MidiInputs.Where(y => x == $"{y.Details.Id}: {y.Details.Name}").Count() > 0).ToArray(),
+                EnabledOutputDeviceNames = outputs.Select(x => Engine.MidiOutputs.Where(y => x == $"{y.Details.Id}: {y.Details.Name}").Count() > 0).ToArray(),
                 Error = error
             };
         }
@@ -167,8 +167,8 @@ namespace SightReader.Engine.Server
 
             try
             {
-                inputs = midiAccess.Inputs.Select(x => x.Name).ToArray();
-                outputs = midiAccess.Outputs.Select(x => x.Name).ToArray();
+                inputs = midiAccess.Inputs.Select(x => $"{x.Id}: {x.Name}").ToArray();
+                outputs = midiAccess.Outputs.Select(x => $"{x.Id}: {x.Name}").ToArray();
             }
             catch (Exception ex)
             {
@@ -182,15 +182,15 @@ namespace SightReader.Engine.Server
                 {
                     try
                     {
-                        if (Engine.MidiInputs.Exists(x => x.Details.Name == inputDeviceName))
+                        if (Engine.MidiInputs.Exists(x => $"{x.Details.Id}: {x.Details.Name}" == inputDeviceName))
                         {
-                            var input = Engine.MidiInputs.Find(x => x.Details.Name == inputDeviceName);
+                            var input = Engine.MidiInputs.Find(x => $"{x.Details.Id}: {x.Details.Name}" == inputDeviceName);
                             input.CloseAsync().Wait();
                             Engine.MidiInputs.Remove(input);
                         }
                         else
                         {
-                            var inputDevice = midiAccess.OpenInputAsync(midiAccess.Inputs.Where(x => x.Name == inputDeviceName).First().Id).Result;
+                            var inputDevice = midiAccess.OpenInputAsync(midiAccess.Inputs.Where(x => $"{x.Id}: {x.Name}" == inputDeviceName).First().Id).Result;
                             Engine.MidiInputs.Add(inputDevice);
                         }
                     }
@@ -208,15 +208,15 @@ namespace SightReader.Engine.Server
                 {
                     try
                     {
-                        if (Engine.MidiOutputs.Exists(x => x.Details.Name == outputDeviceName))
+                        if (Engine.MidiOutputs.Exists(x => $"{x.Details.Id}: {x.Details.Name}" == outputDeviceName))
                         {
-                            var output = Engine.MidiOutputs.Find(x => x.Details.Name == outputDeviceName);
+                            var output = Engine.MidiOutputs.Find(x => $"{x.Details.Id}: {x.Details.Name}" == outputDeviceName);
                             output.CloseAsync().Wait();
                             Engine.MidiOutputs.Remove(output);
                         }
                         else
                         {
-                            var outputDevice = midiAccess.OpenOutputAsync(midiAccess.Outputs.Where(x => x.Name == outputDeviceName).First().Id).Result;
+                            var outputDevice = midiAccess.OpenOutputAsync(midiAccess.Outputs.Where(x => $"{x.Id}: {x.Name}" == outputDeviceName).First().Id).Result;
                             Engine.MidiOutputs.Add(outputDevice);
                         }
                     }
@@ -232,8 +232,8 @@ namespace SightReader.Engine.Server
                 Error = error,
                 InputDeviceNames = inputs,
                 OutputDeviceNames = outputs,
-                EnabledInputDeviceNames = inputs.Select(x => Engine.MidiInputs.Exists(y => x == y.Details.Name)).ToArray(),
-                EnabledOutputDeviceNames = outputs.Select(x => Engine.MidiOutputs.Exists(y => x == y.Details.Name)).ToArray(),
+                EnabledInputDeviceNames = inputs.Select(x => Engine.MidiInputs.Exists(y => x == $"{y.Details.Id}: {y.Details.Name}")).ToArray(),
+                EnabledOutputDeviceNames = outputs.Select(x => Engine.MidiOutputs.Exists(y => x == $"{y.Details.Id}: {y.Details.Name}")).ToArray(),
             };
         }
 
@@ -363,7 +363,7 @@ namespace SightReader.Engine.Server
 
             if (Config.ScoresPath != "default")
             {
-                if (Directory.Exists(scorePath))
+                if (Directory.Exists(Config.ScoresPath))
                 {
                     scorePath = Config.ScoresPath;
                 }
@@ -381,6 +381,12 @@ namespace SightReader.Engine.Server
                     var fileStream = new FileStream(command.FilePath, FileMode.Open, FileAccess.Read);
                     var scoreBuilder = new ScoreBuilder.ScoreBuilder(fileStream);
                     var score = scoreBuilder.Build();
+
+                    if (score.Parts.Length == 0)
+                    {
+                        error = $"Score {command.FilePath} does not have any MusicXML parts.";
+                    }
+
                     Engine.Interpreter.SetScore(score, command.FilePath);
                     Engine.Interpreter.ResetPlayback();
 

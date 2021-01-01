@@ -68,6 +68,7 @@ namespace SightReader.Engine.ScoreBuilder
     public class ScoreBuilder
     {
         private Stream stream;
+        private int measureCounter = 1;
 
         public ScoreBuilder(Stream stream)
         {
@@ -108,8 +109,161 @@ namespace SightReader.Engine.ScoreBuilder
                 }).ToArray()
             };
 
+            BuildScoreRemoveEmptyStaves(builtScore);
+
+            return builtScore;
+        }
+
+        /*
+         * If a slur connects to notes of the same pitch, treat this as a tie.
+         */
+        private void BuildScoreConvertSameSlurredNotesToTies(Score score)
+        {
+            for (var partIndex = 0; partIndex < score.Parts.Length; partIndex++)
+            {
+                var part = score.Parts[partIndex];
+
+                for (var staffIndex = part.Staves.Length - 1; staffIndex >= 0; staffIndex--)
+                {
+                    var staff = part.Staves[staffIndex];
+                    var staffElements = staff.Elements;
+
+                    for (var currentElementGroupIndex = 0; currentElementGroupIndex < staffElements.Length; currentElementGroupIndex++)
+                    {
+                        var previousElementGroup = currentElementGroupIndex >= 1 ? staffElements[currentElementGroupIndex - 1] : null;
+                        var currentElementGroup = staffElements[currentElementGroupIndex];
+                        var nextElementGroup = currentElementGroupIndex < staffElements.Length - 1 ? staffElements[currentElementGroupIndex + 1] : null;
+
+                        for (var currentElementIndex = 0; currentElementIndex < currentElementGroup.Length; currentElementIndex++)
+                        {
+                            var currentElement = currentElementGroup[currentElementIndex];
+                            var currentElementSlurStartNotation = currentElement.Notations.FirstOrDefault(z => z is Slur && ((z as Slur)!.Type == StartStopContinue.Start));
+
+                            if (currentElementSlurStartNotation != null)
+                            {
+                                BuildScoreConvertSameSlurredNotesToTies_RecursiveFixSlurs(score, partIndex, staffIndex, currentElementGroupIndex, currentElementIndex, currentElementSlurStartNotation);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void BuildScoreConvertSameSlurredNotesToTies_RecursiveFixSlurs(Score score, int partIndex, int staffIndex, int elementGroupIndex, int elementIndex, INotation currentElementSlurStartNotation)
+        {
+            var part = score.Parts[partIndex];
+            var staff = part.Staves[staffIndex];
+            var elementGroup = staff.Elements[elementGroupIndex];
+            var element = elementGroup[elementIndex];
+
+            var isEndOfElementGroup = elementGroupIndex >= staff.Elements.Length;
+
+            if (isEndOfElementGroup)
+            {
+                return;
+            }
+
+            var nextElementGroup = staff.Elements[elementGroupIndex + 1];
+            var nextElementGroupNoteOfSamePitch = nextElementGroup.FirstOrDefault(nextElement => nextElement.Pitch == element.Pitch);
+
+            if (nextElementGroupNoteOfSamePitch == null)
+            {
+                return;
+            }
+
+            /* If the next element group at the same pitch has an ending slur, convert this to a start/stop tie. */
+            {
+                var nextElementGroupNoteStopSlur = nextElementGroupNoteOfSamePitch.Notations.FirstOrDefault(nextElementNotation => nextElementNotation != null && nextElementNotation is Slur && (nextElementNotation as Slur).Type == StartStopContinue.Stop);
+
+                if (nextElementGroupNoteStopSlur == null)
+                {
+                    /* No issue with two notes of the same pitch being slurred */
+                    return;
+                }
+                else
+                {
+                    /* For current element. replace the slur start notation with a tie start notation */
+                    {
+                        var newNotations = element.Notations.ToList();
+                        newNotations = (List<INotation>)newNotations.Where(x => x != currentElementSlurStartNotation);
+
+                        newNotations.Add(new Tie()
+                        {
+                            Type = StartStopContinue.Start,
+                            Number = (currentElementSlurStartNotation as Slur).Number,
+                        });
+                        element.Notations = newNotations.ToArray();
+                    }
+
+                    /* For next element. replace the slur stop notation with a tie stop notation */
+                    {
+                        var newNotations = nextElementGroupNoteOfSamePitch.Notations.ToList();
+                        newNotations = (List<INotation>)newNotations.Where(x => x != nextElementGroupNoteStopSlur);
+
+                        newNotations.Add(new Tie()
+                        {
+                            Type = StartStopContinue.Stop,
+                            Number = (currentElementSlurStartNotation as Slur).Number,
+                        });
+                        nextElementGroupNoteOfSamePitch.Notations = newNotations.ToArray();
+                    }
+                }
+
+            }
+
+            /* If the next element group at the same pitch has a continuation slur, recursively evaluate this */
+            {
+                var nextElementGroupNoteContinueSlur = nextElementGroupNoteOfSamePitch.Notations.FirstOrDefault(nextElementNotation => nextElementNotation != null && nextElementNotation is Slur && (nextElementNotation as Slur).Type == StartStopContinue.Stop);
+
+                if (nextElementGroupNoteContinueSlur == null)
+                {
+                    /* No issue with two notes of the same pitch being slurred */
+                    return;
+                }
+                else
+                {
+                    /* For current element. replace the slur start notation with a tie start notation */
+                    {
+                        var newNotations = element.Notations.ToList();
+                        newNotations = (List<INotation>)newNotations.Where(x => x != currentElementSlurStartNotation);
+
+                        newNotations.Add(new Tie()
+                        {
+                            Type = StartStopContinue.Start,
+                            Number = (currentElementSlurStartNotation as Slur).Number,
+                        });
+                        element.Notations = newNotations.ToArray();
+                    }
+
+                    /* For next element. replace the slur stop notation with a tie continue notation */
+                    {
+                        var newNotations = nextElementGroupNoteOfSamePitch.Notations.ToList();
+                        newNotations = (List<INotation>)newNotations.Where(x => x != nextElementGroupNoteContinueSlur);
+
+                        newNotations.Add(new Tie()
+                        {
+                            Type = StartStopContinue.Stop,
+                            Number = (currentElementSlurStartNotation as Slur).Number,
+                        });
+
+                        var newStartNotation = new Slur()
+                        {
+                            Type = StartStopContinue.Start,
+                            Number = (currentElementSlurStartNotation as Slur).Number,
+                        };
+                        newNotations.Add(newStartNotation);
+                        nextElementGroupNoteOfSamePitch.Notations = newNotations.ToArray();
+
+                        BuildScoreConvertSameSlurredNotesToTies_RecursiveFixSlurs(score, partIndex, staffIndex, elementGroupIndex + 1, elementIndex, newStartNotation);
+                    }
+                }
+            }
+        }
+
+        private void BuildScoreRemoveEmptyStaves(Score score)
+        {
             // Remove empty staves
-            foreach (var part in builtScore.Parts)
+            foreach (var part in score.Parts)
             {
                 var stavesList = part.Staves.ToList();
 
@@ -123,8 +277,6 @@ namespace SightReader.Engine.ScoreBuilder
                 }
                 part.Staves = stavesList.ToArray();
             }
-
-            return builtScore;
         }
 
         private ScoreInfo BuildScoreInfo(scorepartwise score)
@@ -218,9 +370,9 @@ namespace SightReader.Engine.ScoreBuilder
             }).Where(x => x.Elements.Length > 0).ToArray();
         }
 
-        private void BuildPartStaffMeasure(scorepartwisePartMeasure measure,  List<List<List<IElement>>> elementStaves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
+        private void BuildPartStaffMeasure(scorepartwisePartMeasure measure, List<List<List<IElement>>> elementStaves, List<BeatDurationDirective> beatDurationDirectives, List<RepeatDirective> repeatDirectives)
         {
-            var measureNumber = measure.number.ToInt();
+            var measureNumber = measureCounter++;
             var staffBuilders = new StaffBuilder[] {
                 new StaffBuilder(1),
                 new StaffBuilder(2)
@@ -337,7 +489,7 @@ namespace SightReader.Engine.ScoreBuilder
             var notations = new List<INotation>();
 
             el.Measure = (ushort)measureNumber;
-            
+
             if (rawNote.staff != null)
             {
                 el.Staff = rawNote.staff.ToByte();
@@ -385,7 +537,8 @@ namespace SightReader.Engine.ScoreBuilder
                         var pitch = rawNote.Items[i] as pitch;
                         el.Pitch = pitch!.ToByte();
 
-                        var alter = pitch!.alterSpecified ? pitch.alter switch {
+                        var alter = pitch!.alterSpecified ? pitch.alter switch
+                        {
                             -2 => "bb",
                             -1 => "b",
                             0 => "",
